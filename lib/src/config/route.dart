@@ -6,7 +6,7 @@ class Routes{
   static Map<String,WidgetBuilder> getRoute(){
     return  <String, WidgetBuilder>{
           '/': (_) => MainPage(),
-          // '/detail': (_) => ProductDetailPage()
+          '/detail': (_) => ProductDetailPage()
         };
   }
 }

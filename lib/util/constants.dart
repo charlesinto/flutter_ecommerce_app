@@ -1,0 +1,1 @@
+String appDomain = 'http://167.99.154.149:1337';

@@ -97,6 +97,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   void onBottomIconPressed(int index) {
+    print('pressed button');
     if (index == 0 || index == 1) {
       setState(() {
         isHomePageSelected = true;
@@ -130,9 +131,18 @@ class _MainPageState extends State<MainPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    _appBar(),
-                    _title(),
+                    // _appBar(),
                     Expanded(
+                      flex: 1,
+                      child:  _appBar()
+                    ),
+                    // _title(),
+                    Expanded(
+                      flex: 1,
+                      child:  _title(),
+                    ),
+                    Expanded(
+                        flex: 5,
                         child:AnimatedSwitcher(
                           duration: Duration(milliseconds: 300),
                           switchInCurve: Curves.easeInToLinear,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/data.dart';
 import 'package:flutter_ecommerce_app/src/model/product.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
@@ -6,7 +7,8 @@ import 'package:flutter_ecommerce_app/src/themes/theme.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 
 class ProductCard extends StatefulWidget {
-  final Product product;
+  // final Product product;
+  final AppProduct product;
   ProductCard({Key key, this.product}) : super(key: key);
 
   @override
@@ -14,7 +16,8 @@ class ProductCard extends StatefulWidget {
 }
 
 class _ProductCardState extends State<ProductCard> {
-  Product model;
+  // Product model;
+  AppProduct model;
   @override
   void initState() {
     model = widget.product;
@@ -53,17 +56,7 @@ class _ProductCardState extends State<ProductCard> {
         child: Stack(
           alignment: Alignment.center,
           children: <Widget>[
-            Positioned(
-              left: 0,
-              top: 0,
-              child: IconButton(
-                icon: Icon(model.isliked ? Icons.favorite : Icons.favorite_border, color: model.isliked ? LightColor.red : LightColor.iconColor,),
-                 onPressed: (){
-                   setState(() {
-                     model.isliked = !model.isliked ;
-                   });
-                 })
-            ),
+            
             Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -76,7 +69,12 @@ class _ProductCardState extends State<ProductCard> {
                       radius: 40,
                       backgroundColor: LightColor.orange.withAlpha(40),
                     ),
-                    Image.asset(model.image)
+                    // Image.asset('assets/shooe_tilt_1.png')
+                    Image.network(model.mainImageUrl,
+                      fit: BoxFit.contain,
+                      height: 150.0,
+                      width: 150.0,
+                    )
                   ],
                 ),
                 // SizedBox(height: 5),
@@ -85,16 +83,28 @@ class _ProductCardState extends State<ProductCard> {
                   fontSize: model.isSelected ? 16 : 14,
                 ),
                 TitleText(
-                  text: model.category,
+                  text: model.category.name,
                   fontSize: model.isSelected ? 14 : 12,
                   color: LightColor.orange,
                 ),
                 TitleText(
-                  text: model.price.toString(),
+                  // text: model.price.toString(),
+                  text: model.finalPrice.toString(),
                   fontSize: model.isSelected ? 18 : 16,
                 ),
               ],
             ),
+            Positioned(
+              left: 0,
+              top: 0,
+              child: IconButton(
+                icon: Icon(model.isLiked ? Icons.favorite : Icons.favorite_border, color: model.isLiked ? LightColor.red : LightColor.iconColor,),
+                 onPressed: (){
+                   setState(() {
+                     model.isLiked = !model.isLiked ;
+                   });
+                 })
+            )
           ],
         ),
       ),
