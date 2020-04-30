@@ -1,10 +1,21 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
+import 'package:flutter_ecommerce_app/src/model/app_cartlist.dart';
+import 'package:flutter_ecommerce_app/src/model/app_product.dart';
+import 'package:flutter_ecommerce_app/src/model/app_state.dart';
+import 'package:flutter_ecommerce_app/src/model/app_user.dart';
 import 'package:flutter_ecommerce_app/src/model/category.dart';
 import 'package:flutter_ecommerce_app/src/model/data.dart';
+import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/themes/theme.dart';
 import 'package:flutter_ecommerce_app/src/wigets/prduct_icon.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
+import 'package:flutter_ecommerce_app/util/app.dart';
+import 'package:flutter_redux/flutter_redux.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
 
 class ProductDetailPage extends StatefulWidget {
   ProductDetailPage({Key key}) : super(key: key);
@@ -32,6 +43,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     controller.dispose();
     super.dispose();
   }
+  AppProduct _selectedProduct;
 
   bool isLiked = true;
   Widget _appBar() {
@@ -93,7 +105,64 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     );
   }
 
-  Widget _productImage() {
+  _onAlertButtonPressed(context, AppProduct product, Cart cartItem)  async{
+    try{
+        int orderNumber = 0;
+        App.isLoading(context);
+        print(product.orderNumber.toString());
+        List<AppProduct> cart = cartItem.products;
+        AppProduct doc =  cart.firstWhere((AppProduct element) => element.id == product.id, orElse: () => null);
+        if(doc != null){
+          // get the index
+
+          int index = cart.indexOf(doc);
+          orderNumber = cart[index].orderNumber + 1;
+          print(orderNumber);
+        }else{
+          orderNumber = 1;
+        }
+        await App.addProductToCart(product.id, orderNumber);
+        App.stopLoading(context);
+        Alert(
+          context: context,
+          type: AlertType.success,
+          title: "Add to cart",
+          desc: "Product added to cart successfully",
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Continue",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: () => Navigator.pop(context),
+              width: 120,
+            ),
+            DialogButton(
+              color: Colors.white,
+              child: Text(
+                "Go to cart",
+                style: TextStyle(color: Colors.orange, fontSize: 20),
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+                StoreProvider.of<AppState>(context).dispatch(BottomIconSelected(2));
+                Navigator.of(context).pushNamed('/');
+              },
+              width: 120,
+            )
+          ],
+        ).show();
+
+    }catch(error){
+      App.stopLoading(context);
+      print(error);
+    }
+  }
+
+
+  Widget _productImage(AppProduct selectedProduct, BuildContext context2) {
+    print(selectedProduct.name);
     return AnimatedBuilder(
       builder: (context, child) {
         return AnimatedOpacity(
@@ -107,17 +176,20 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         alignment: Alignment.bottomCenter,
         children: <Widget>[
           TitleText(
-            text: "AIP",
-            fontSize: 160,
+            text: selectedProduct.name,
+            fontSize: 20,
             color: LightColor.lightGrey,
           ),
-          Image.asset('assets/show_1.png')
+          Image.network(selectedProduct.mainImageUrl, 
+            width: AppTheme.fullWidth(context2),
+            fit: BoxFit.contain,)
+          // Image.asset('assets/show_1.png')
         ],
       ),
     );
   }
 
-  Widget _categoryWidget() {
+  Widget _categoryWidget(AppProduct selectedProduct) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 0),
       width: AppTheme.fullWidth(context),
@@ -156,11 +228,11 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         ));
   }
 
-  Widget _detailWidget() {
+  Widget _detailWidget(AppProduct selectedProduct) {
     return DraggableScrollableSheet(
       maxChildSize: .8,
-      initialChildSize: .53,
-      minChildSize: .53,
+      initialChildSize: .4,
+      minChildSize: .4,
       builder: (context, scrollController) {
         return Container(
           padding: AppTheme.padding.copyWith(bottom: 0),
@@ -193,7 +265,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: <Widget>[
-                      TitleText(text: "NIKE AIR MAX 200", fontSize: 25),
+                      TitleText(text: selectedProduct.name, fontSize: 25),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: <Widget>[
@@ -201,26 +273,30 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: <Widget>[
                               TitleText(
-                                text: "\$ ",
+                                text: "NGN ",
                                 fontSize: 18,
                                 color: LightColor.red,
                               ),
                               TitleText(
-                                text: "240",
+                                text: App.formatAsMoney(selectedProduct.finalPrice),
                                 fontSize: 25,
                               ),
                             ],
                           ),
                           Row(
                             children: <Widget>[
-                              Icon(Icons.star,
-                                  color: LightColor.yellowColor, size: 17),
-                              Icon(Icons.star,
-                                  color: LightColor.yellowColor, size: 17),
-                              Icon(Icons.star,
-                                  color: LightColor.yellowColor, size: 17),
-                              Icon(Icons.star,
-                                  color: LightColor.yellowColor, size: 17),
+                              /*
+                                  Icons.start
+                                  color: LightColor.yellowColor
+                              */
+                              Icon(Icons.star_border,
+                                   size: 17),
+                              Icon(Icons.star_border,
+                                   size: 17),
+                              Icon(Icons.star_border,
+                                   size: 17),
+                              Icon(Icons.star_border,
+                                   size: 17),
                               Icon(Icons.star_border, size: 17),
                             ],
                           ),
@@ -232,15 +308,15 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                 SizedBox(
                   height: 20,
                 ),
-                _availableSize(),
+                // _availableSize(),
                 SizedBox(
                   height: 20,
                 ),
-                _availableColor(),
-                SizedBox(
-                  height: 20,
-                ),
-                _description(),
+                // _availableColor(),
+                // SizedBox(
+                //   height: 20,
+                // ),
+                _description(selectedProduct.description),
               ],
             ),
           ),
@@ -340,58 +416,78 @@ class _ProductDetailPageState extends State<ProductDetailPage>
     );
   }
 
-  Widget _description() {
+  Widget _description(String description) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: <Widget>[
         TitleText(
-          text: "Available Size",
+          text: "Description",
           fontSize: 14,
         ),
         SizedBox(height: 20),
-        Text(AppData.description),
+        Text(description),
       ],
     );
   }
 
-  FloatingActionButton _flotingButton() {
+  FloatingActionButton _flotingButton(BuildContext context, AppProduct _product, Cart cart) {
     return FloatingActionButton(
-      onPressed: () {},
+      onPressed: () {
+        print(_product);
+        StoreProvider.of<AppState>(context).dispatch(AddPrductToCart(_product));
+        _onAlertButtonPressed(context, _product, cart);
+      },
       backgroundColor: LightColor.orange,
-      child: Icon(Icons.shopping_basket,
-          color: Theme.of(context).floatingActionButtonTheme.backgroundColor),
+      child: Icon(Icons.shopping_cart,
+
+          color: Colors.white),
     );
   }
-
+  Future<Cart> getCart() async{
+      User user = await App.getCurrentUser();
+      var cart = await  App.getUserCart(user.token);
+      return cart;
+  }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: _flotingButton(),
-      body: SafeArea(
-        child: Container(
-          decoration: BoxDecoration(
-              gradient: LinearGradient(
-            colors: [
-              Color(0xfffbfbfb),
-              Color(0xfff7f7f7),
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          )),
-          child: Stack(
-            children: <Widget>[
-              Column(
-                children: <Widget>[
-                  _appBar(),
-                  _productImage(),
-                  _categoryWidget(),
-                ],
-              ),
-              _detailWidget()
-            ],
-          ),
-        ),
-      ),
-    );
+    return FutureBuilder(
+      future: getCart(),
+      builder: (BuildContext context, AsyncSnapshot<Cart> snapshot){
+        return StoreConnector<AppState, AppState>(
+        builder: (BuildContext context, state){
+          _selectedProduct = state.selectedProduct;
+          return Scaffold(
+            floatingActionButton: _flotingButton(context, _selectedProduct, snapshot.data),
+            body: SafeArea(
+                child: Container(
+                  decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                    colors: [
+                      Color(0xfffbfbfb),
+                      Color(0xfff7f7f7),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  )),
+                  child: Stack(
+                    children: <Widget>[
+                      Column(
+                        children: <Widget>[
+                          _appBar(),
+                          _productImage(_selectedProduct, context),
+                          _categoryWidget(_selectedProduct),
+                        ],
+                      ),
+                      _detailWidget(_selectedProduct)
+                    ],
+                  ),
+                ),
+              )
+          );
+        },
+         converter: (store) => store.state
+      );
+      },
+      );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
 import 'package:flutter_ecommerce_app/src/model/category.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/themes/theme.dart';
@@ -8,7 +9,8 @@ class ProducIcon extends StatelessWidget {
   // final String imagePath;
   // final String text;
   // final bool isSelected;
-  final  Category model;
+  // final  Category model;
+  final ProductCategory model;
   ProducIcon({Key key,this.model})
       : super(key: key);
 

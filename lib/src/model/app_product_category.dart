@@ -7,6 +7,8 @@ class ProductCategory{
   final int updatedAt;
   final int id;
   final String name;
+  bool isSelected = false;
+  String image;
   final int commissionPercentage;
   final int commissionMaxAmount;
   final int owner;

@@ -37,6 +37,8 @@ class AppProduct{
   final int agent;
   bool isSelected = false;
   bool isLiked = false;
+  int orderNumber = 0;
+  final int orderId;
   final int adCategory;
   final ProductCategory category;
   final SubCategory subCategory;
@@ -48,7 +50,12 @@ class AppProduct{
     @required this.costPrice, @required this.discounts, @required this.finalPrice,@required this.deliveryDays,
      @required this.deliveryLocation,@required this.deliveryType, @required this.rating,@required this.blockedReason,@required this.isBlocked,@required this.homepage,
      @required this.homePageUntil,@required this.featured,@required this.featuredUntil,@required this.owner,@required this.agent,@required this.adCategory,@required this.category,@required this.subCategory,
-    @required this.store});
+    @required this.store, this.orderNumber, this.orderId});
+
+  Map toJson(){
+    return {'id': id, 'finalPrice': finalPrice, 'name': name,
+     'sellingPrice':sellingPrice,'costPrice': costPrice, };
+  }
 }
 
 /*

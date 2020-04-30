@@ -11,6 +11,9 @@ class AppTheme {
     cardTheme: CardTheme(color: LightColor.background),
     textTheme: TextTheme(display1: TextStyle(color: LightColor.black)),
     iconTheme: IconThemeData(color: LightColor.iconColor),
+    accentColor: LightColor.primaryAccent,
+    toggleableActiveColor: LightColor.lightColor,
+    primaryColorLight: LightColor.lightColor,
     bottomAppBarColor: LightColor.background,
     dividerColor: LightColor.lightGrey,
     primaryTextTheme: TextTheme(

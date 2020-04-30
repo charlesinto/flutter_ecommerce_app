@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_ecommerce_app/src/model/app_state.dart';
+import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/wigets/BottomNavigationBar/bottom_curved_Painter.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 
 class CustomBottomNavigationBar extends StatefulWidget {
   final Function(int) onIconPresedCallback;
@@ -59,11 +62,12 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
     super.dispose();
   }
 
-  Widget _icon(IconData icon, bool isEnable, int index) {
+  Widget _icon(IconData icon,BuildContext context, bool isEnable, int index) {
     return Expanded(
       child: InkWell(
         borderRadius: BorderRadius.all(Radius.circular(50)),
         onTap: () {
+            StoreProvider.of<AppState>(context).dispatch(BottomIconSelected(index));
           _handlePressed(index);
         },
         child: AnimatedContainer(
@@ -142,35 +146,39 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
   Widget build(BuildContext context) {
     final appSize = MediaQuery.of(context).size;
     final height = 60.0;
-    return Container(
-      width: appSize.width,
-      height: 60,
-      child: Stack(
-        children: [
-          Positioned(
-            left: 0,
-            bottom: 0,
-            width: appSize.width,
-            height: height - 10,
-            child: _buildBackground(),
-          ),
-          Positioned(
-            left: (appSize.width - _getButtonContainerWidth()) / 2,
-            top: 0,
-            width: _getButtonContainerWidth(),
-            height: height,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: <Widget>[
-                _icon(Icons.home, _selectedIndex == 0, 0),
-                _icon(Icons.search, _selectedIndex == 1, 1),
-                _icon(Icons.card_travel, _selectedIndex == 2, 2),
-                _icon(Icons.favorite_border, _selectedIndex == 3, 3),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return StoreConnector<AppState, AppState>(
+      builder: (BuildContext context, state){
+          return Container(
+              width: appSize.width,
+              height: 60,
+              child: Stack(
+                children: [
+                  Positioned(
+                    left: 0,
+                    bottom: 0,
+                    width: appSize.width,
+                    height: height - 10,
+                    child: _buildBackground(),
+                  ),
+                  Positioned(
+                    left: (appSize.width - _getButtonContainerWidth()) / 2,
+                    top: 0,
+                    width: _getButtonContainerWidth(),
+                    height: height,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: <Widget>[
+                        _icon(Icons.home,context, state.bottomIconIndex == 0, 0),
+                        _icon(Icons.history,context, state.bottomIconIndex == 1, 1),
+                        _icon(Icons.shopping_basket,context, state.bottomIconIndex == 2, 2),
+                        _icon(Icons.favorite_border,context, state.bottomIconIndex== 3, 3),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+    },
+    converter: (store) => store.state);
   }
 }

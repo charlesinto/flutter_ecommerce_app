@@ -22,6 +22,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
+
   cupertino_icons: ^0.1.2
   google_fonts: ^0.3.9
   redux: ^4.0.0
@@ -31,6 +32,14 @@ dependencies:
   path_provider: ^1.6.5
   url_launcher: ^5.4.2
   carousel_slider: ^0.0.7
+  rflutter_alert: ^1.0.3
+  grouped_buttons: ^1.0.3
+  shared_preferences: ^0.5.7
+  flutter_paystack: 1.0.1
+  # intl: ^0.16.0
+  flutter_money_formatter: 0.8.3
+  # paystack_flutter: ^0.0.2
+  # paystack_sdk: ^0.0.1
 
 dev_dependencies:
   flutter_test:
