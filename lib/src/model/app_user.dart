@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_ecommerce_app/src/model/app_wallet.dart';
 
 class User{
   final String firstName;
@@ -25,7 +26,7 @@ class User{
   final String contactLine;
   final String sellerIdentification ;
   final bool sellerApproved;
-  final bool pinSet;
+  bool pinSet = false;
   final int rating;
   final String passwordResetToken;
   final int passwordResetTokenExpiresAt;
@@ -34,6 +35,7 @@ class User{
   final bool emailVerified;
   final String tosAcceptedByIp;
   final int lastSeenAt;
+  Wallet wallet;
   final String referredBy;
   final String sellerAgent;
 
@@ -46,8 +48,8 @@ class User{
      , @required this.passwordResetToken, @required this.passwordResetTokenExpiresAt, @required this.pinSet
      , @required this.profileImage, @required this.rating, @required this.referralCode, @required this.referredBy,
      @required this.sellerAgent, @required this.sellerApproved, @required this.sellerIdentification, @required this.token
-     , @required this.tosAcceptedByIp, @required this.type,});
-
+     , @required this.tosAcceptedByIp, @required this.type, this.wallet});
+  
   Map toJson(){
     return {
       'firstName': firstName,
@@ -82,6 +84,7 @@ class User{
       'lastSeenAt': lastSeenAt,
       'referredBy': referredBy,
       'sellerAgent': sellerAgent,
+      'wallet': wallet
     };
   }
 }

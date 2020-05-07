@@ -162,15 +162,14 @@ class MyApp extends StatelessWidget {
                                 debugShowCheckedModeBanner: false ,
                                 home: Scaffold(
                                   body:  Container(
-                                      color: LightColor.orange,
+                                      color: Colors.white,
                                       child: Center(
-                                        child: TitleText(
-                                          color: Colors.white ,
-                                          text: 'Azonka',
-                                          fontSize: 30,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                    )
+                                        child: Image.asset('assets/logo.png',
+                                                    fit: BoxFit.contain,
+                                                    height: 400.0,
+                                                    width: 400.0,
+                                          ),
+                                        )
                                     ),
                                 ),
                               );
@@ -202,15 +201,14 @@ class MyApp extends StatelessWidget {
                 debugShowCheckedModeBanner: false ,
                 home: Scaffold(
                   body:  Container(
-                      color: LightColor.orange,
+                      color: Colors.white,
                       child: Center(
-                        child: TitleText(
-                          color: Colors.white ,
-                          text: 'Azonka',
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                        ),
-                    )
+                        child: Image.asset('assets/logo.png',
+                                    fit: BoxFit.contain,
+                                    height: 400.0,
+                                    width: 400.0,
+                          ),
+                        )
                     ),
                 ),
               );
