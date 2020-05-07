@@ -38,9 +38,10 @@ dependencies:
   flutter_paystack: 1.0.1
   # intl: ^0.16.0
   flutter_money_formatter: 0.8.3
+  flutter_country_picker: ^0.1.6
   # paystack_flutter: ^0.0.2
   # paystack_sdk: ^0.0.1
-
+  keyboard_avoider: ^0.1.2
 dev_dependencies:
   flutter_test:
     sdk: flutter

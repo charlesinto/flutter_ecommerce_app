@@ -12,6 +12,9 @@ import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../model/app_state.dart';
 import '../redux/actions.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
+import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
+import 'package:flutter_ecommerce_app/src/themes/theme.dart';
 
 class LoginPage extends StatefulWidget{
   @override
@@ -22,9 +25,11 @@ class LoginPage extends StatefulWidget{
 
 
 class _LoginPageState extends State<LoginPage>{
-  String _emailAddress;
-  String _password;
+  String _emailAddress = "";
+  String _password = "";
   String _errorMessage = "";
+  String _emailVerification = "";
+  String _emailVerificationValid = "";
   User user;
   SharedPreferences _preferences;
   Widget _emailEntryField(String title,String type, {bool isPassword = false}) {
@@ -53,6 +58,38 @@ class _LoginPageState extends State<LoginPage>{
                   border: InputBorder.none,
                   fillColor: Color(0xfff3f3f4),
                   filled: true
+              ))
+        ],
+      ),
+    );
+  }
+
+  Widget _emailVerificationEntryField(String title, sta) {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          TextField(
+              keyboardType: TextInputType.emailAddress,
+              obscureText: false,
+              onChanged: (value) {
+                sta(() {
+                  _emailVerification = value;
+                });
+              },
+              decoration: InputDecoration(
+                  border: InputBorder.none,
+                  fillColor: Color(0xfff3f3f4),
+                  filled: true,
+                  errorText: _emailVerificationValid.isNotEmpty ? _emailVerificationValid : null
               ))
         ],
       ),
@@ -132,15 +169,51 @@ class _LoginPageState extends State<LoginPage>{
     );
   }
   loginUser(BuildContext context) async{
-    Response response;
+
+    
     setState(() {
       _errorMessage = '';
     });
+    if(_emailAddress.isEmpty || _password.isEmpty){
+          return setState(() {
+            _errorMessage = 'Email Address and Password are required';
+          });
+    }
+    
+    signInUser(context);
+  }
+  signInUser(BuildContext context) async{
+    Response response;
     try{
+         _preferences = await SharedPreferences.getInstance();
         App.isLoading(context);
         response = await App.login(_emailAddress, _password);
         
         var data = json.decode(response.body);
+        if(data['success'] == false || data['message'] == 'Please verify your email address'){
+           App.stopLoading(context);
+           _preferences.setString('email', _emailAddress);
+           _preferences.setString('password', _password);
+           return  Alert(
+              context: context,
+              type: AlertType.info,
+              title: "Account Unverified",
+              desc: "Your account is unverified, please kindly verify your account",
+              buttons: [
+                DialogButton(
+                  color: LightColor.orange,
+                  child: Text(
+                    "Verify Account",
+                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                  onPressed: (){
+                    Navigator.of(context).pushNamed('/verifyAccount');
+                  },
+                  width:180,
+                )
+              ],
+            ).show();
+        }
         user = User(firstName: data['user']['firstName'], lastName: data['user']['lastName'], 
                 email: data['user']['emailAddress'], phoneNumber: data['user']['phoneNumber'], 
                 id: data['user']['id'], agentApproved: data['user']['agentApproved'], 
@@ -157,16 +230,17 @@ class _LoginPageState extends State<LoginPage>{
                token: data['token'], tosAcceptedByIp: data['user']['tosAcceptedByIp'], type: data['user']['type']);
       
       StoreProvider.of<AppState>(context).dispatch(UserLoggedIn(user));
-      _preferences = await SharedPreferences.getInstance();
+     
  
       _preferences.setString('user', json.encode(user));
 
       App.stopLoading(context);
-
+      // print(user.emailVerified.toString());
       Navigator.of(context).pushReplacementNamed('/home');
 
     }catch(error){
       App.stopLoading(context);
+      
       if(response.statusCode == 400){
         setState(() {
           _errorMessage = json.decode(response.body)['message'];
@@ -176,7 +250,7 @@ class _LoginPageState extends State<LoginPage>{
           _errorMessage = 'Some errors were enountered';
         });
       }
-      print(error);
+      print(_errorMessage);
     }
   }
   Widget _submitButton(BuildContext context) {
@@ -208,7 +282,7 @@ class _LoginPageState extends State<LoginPage>{
           )
     );
   }
-  _signupButton(){
+  _signupButton(BuildContext context){
     return Container(
       width: MediaQuery.of(context).size.width,
       padding: EdgeInsets.symmetric(vertical: 15),
@@ -218,7 +292,9 @@ class _LoginPageState extends State<LoginPage>{
             child: OutlineButton(
               
               borderSide: BorderSide(width: 1.0,color: Color(0xfff7892b)),
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context).pushNamed('/signup');
+              },
               child: Container(
                 decoration: BoxDecoration(
                   // boxShadow: <BoxShadow>[
@@ -236,6 +312,98 @@ class _LoginPageState extends State<LoginPage>{
               ),
             )
           );
+  }
+  sendPasswordResetToken(BuildContext context){
+    var deviceWidth = MediaQuery.of(context).size.width;
+    var deviceHeight = MediaQuery.of(context).size.height;
+    return showDialog(
+      context: context,
+      builder: (BuildContext context){
+        return StatefulBuilder(builder: (BuildContext context, sta){
+          return GestureDetector(
+            onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
+            child: AlertDialog(
+                  content:  Container(
+                      width: deviceWidth * 0.6,
+                      height: deviceHeight * 0.3,
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
+                      child: Column(
+                        children: [
+                          Container(
+                            child: TitleText(text: 'Recover Account',)
+                          ),
+                          Divider(height: 2.0),
+                          SizedBox(
+                            height: 16.0
+                          ),
+                          _emailVerificationEntryField("Email Address", sta) 
+                        ]
+                      ),
+                    ),
+                  actions: <Widget>[
+                    Container(
+
+                      child: FlatButton(
+                          onPressed: (){
+                             sta((){
+                                  _emailVerificationValid = "";
+                                  _emailVerificationValid = "";
+                              });
+                            Navigator.pop(context);
+                          },
+                          child: Text('Cancel', style: TextStyle(color: LightColor.orange),) ,
+                        )
+                    ),
+                    SizedBox(width: 16.0),
+                    RaisedButton(
+                      color: LightColor.primaryAccent,
+                      onPressed: () async{
+                        sta((){
+                             
+                            _emailVerificationValid = "";
+                        });
+                        if(_emailVerification.isEmpty){
+                          return sta((){
+                              _emailVerificationValid = "Email Address is required";
+                          });
+                        }
+                        if(!App.isEmail(_emailVerification)){
+                          return sta((){
+                              _emailVerificationValid = "Email format is invalid";
+                          });
+                        }
+                        App.isLoading(context);
+                        await App.sendPasswordLink(_emailVerification);
+                        App.stopLoading(context);
+                        Alert(
+                            context: context,
+                            type: AlertType.success,
+                            title: "Action Successful",
+                            desc: "Verfication link sent, please check your mail for further actions",
+                            buttons: [
+                              DialogButton(
+                                color: LightColor.orange,
+                                child: Text(
+                                  "Ok",
+                                  style: TextStyle(color: Colors.white, fontSize: 20),
+                                ),
+                                onPressed: (){
+                                  Navigator.pop(context);
+                                  Navigator.pop(context);
+                                },
+                                width: 120,
+                              )
+                            ],
+                          ).show();
+                      },
+                      child: Text('Send Verification Link', style: TextStyle(color: Colors.white),) ,
+                      )
+                  ],
+                )
+          );
+        },);
+      }
+    ); 
   }
   @override
   Widget build(BuildContext context) {
@@ -264,6 +432,7 @@ class _LoginPageState extends State<LoginPage>{
                     SizedBox(height: 10,),
                     _emailPasswordWidget(),
                     SizedBox(height: 6.0,),
+                    
                     _errorMessage.isNotEmpty ?
                     Container(
                       margin: EdgeInsets.symmetric(vertical: 8.0),
@@ -278,7 +447,19 @@ class _LoginPageState extends State<LoginPage>{
                     _submitButton(context),
                     SizedBox(height: 8,),
                     _divider(),
-                    _signupButton()
+                    _signupButton(context),
+                    SizedBox(height: 0,),
+                    FlatButton(
+                      onPressed: (){
+                        sendPasswordResetToken(context);
+                      },
+                      child: Center(
+                        child:Text('forgot Password',
+                            style: TextStyle(decoration: TextDecoration.underline,
+                              color: Colors.grey, fontSize: 12),
+                          ) ,
+                        ),
+                    )
                   ],
                   )
               ) ,

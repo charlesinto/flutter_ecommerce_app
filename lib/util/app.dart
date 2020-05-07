@@ -4,12 +4,16 @@ import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
 import 'package:flutter_ecommerce_app/src/model/app_address.dart';
 import 'package:flutter_ecommerce_app/src/model/app_advert_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_cartlist.dart';
+import 'package:flutter_ecommerce_app/src/model/app_order.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_appstore.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_owner.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_subcategory.dart';
+import 'package:flutter_ecommerce_app/src/model/app_question.dart';
+import 'package:flutter_ecommerce_app/src/model/app_transaction.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
+import 'package:flutter_ecommerce_app/src/model/app_wallet.dart';
 import 'package:flutter_money_formatter/flutter_money_formatter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -370,4 +374,166 @@ class App{
       throw error;
     }
   }
+
+  static Future<List<Order>> getUserOrders() async{
+    try{
+        var user = await App.getCurrentUser();
+        var response = await http.get(appDomain+'/api/v1/user/order/get-orders/0/20', headers: {
+          'x-access-token': user.token
+        });
+        var orders = json.decode(response.body)['order'];
+        // var products = orders['products'];
+        
+        List<Order> _orders = [];
+        orders.forEach(( order){
+          var products = order['products'];
+          List<AppProduct> _products = [];
+          products.forEach((product) {
+                AppProduct appProduct = AppProduct(createdAt: product['createdAt'],
+                id: product['id'], name: product['name'], model: product['model'], description:
+                  product['description'], year: product['year'], mainImageUrl: product['mainImageUrl'], sellingPrice:
+                  product['sellingPrice'], costPrice: product['costPrice'], discounts: product['discounts'], finalPrice: 
+                  product['finalPrice'], deliveryDays: product['deliveryDays'], deliveryLocation: product['deliveryLocation'],
+                    deliveryType: product['deliveryType'], rating: product['rating'], blockedReason: product['blockedReason'],
+                    isBlocked: product['isBlocked'], homepage: product['homepage'], homePageUntil: product['homePageUntil'], 
+                    featured: product['featured'], featuredUntil: product['featuredUntil'], owner: null, agent: product['agent'],
+                      adCategory: product['adCategory'], category: null, subCategory: null, store: null,
+                      orderId: product['id'] ,orderNumber: order['quantity']["${product['id']}"],
+                       orderStatus: order['productStatus']["${product['id']}"]
+                       
+                  );
+              print('here o');
+              _products.add(appProduct);
+              
+          });
+          Address _address = Address(address1: order['address']['address1'], id: order['address']['id'], 
+                state: order['address']['state'], country: order['address']['country']);
+          _orders.add(
+            Order(products: _products , address: _address , addressString: order['addressString'] , 
+              createdAt: order['createdAt'] , id: order['id'] , owner: order['owner'] ,status: order['status'] , totalAmount: order['totalAmount'] )
+          );
+        });
+        return _orders;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<bool> signOutUser() async{
+     try{
+       SharedPreferences _prefs = await SharedPreferences.getInstance();
+       _prefs.remove('user');
+       return true;
+     }catch(error){
+       return false;
+     }
+  }
+  static bool isEmail(String em) {
+
+    String p = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+
+    RegExp regExp = new RegExp(p);
+
+    return regExp.hasMatch(em);
+  }
+  static Future<http.Response> signUp(String firstName, String lastName, String emailAddress,
+    String password, String phoneNumber, String country, String countryCode, String gender, String referredBy
+      ,String isoCode) async{
+      try{
+        var response = await http.post(appDomain+'/api/v1/registration/signup', body: {
+          'firstName': firstName, 'lastName': lastName, 'emailAddress': emailAddress, 
+          'password': password, 'phoneNumber': phoneNumber, 'country': country, 'countryCode': countryCode,
+          'gender': gender, 'referredBy': referredBy, 'isoCode': isoCode
+        });
+        return response;
+      }catch(error){
+        throw error;
+      }
+  }
+  static Future<http.Response> resendVerificationLink(String email) async{
+    try{
+      var response = await http.post(appDomain+'/api/v1/registration/resend-verification-code', body: {
+        'emailAddress': email
+      });
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> verifyEmail(String email, String password, String emailProofToken ) async{
+    try{
+        var response = await http.post(appDomain+'/api/v1/registration/verify-email', body: {
+          'emailAddress': email, 'password': password, 'emailProofToken': emailProofToken
+        });
+        return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> sendPasswordLink(String email) async{
+    try{
+        var response = await http.post(appDomain+'/api/v1/user/forgot-password', body: {'emailAddress': email});
+        return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<User> getUserWallet() async{
+    try{
+      SharedPreferences _prefs = await SharedPreferences.getInstance();
+      var user = await App.getCurrentUser();
+      var response = await http.get(appDomain+'/api/v1/user/wallet/get', headers: {
+        'x-access-token': user.token
+      });
+      var wallet = json.decode(response.body)['wallet'];
+      var transactions = wallet['transactions'];
+      List<Transaction> _transaction = [];
+
+      transactions.forEach((item) {
+        _transaction.add(Transaction(amount: item['amount'] ,createdAt: item['createdAt'],
+        currency: item['currency'] ,id: item['id'] ,isApproved: item['isApproved'] ,owner: item['owner'],
+        transactionReference: item['transactionReference'] ,type: item['type'] ,wallet: item['wallet'] ));
+      });
+
+      Wallet _wallet = Wallet(currency: wallet['currency'], id: wallet['id'], 
+      createdAt: wallet['createdAt'], balance: wallet['balance'], transactions: _transaction);
+
+      user.wallet = _wallet;
+      _prefs.remove('user');
+      _prefs.setString('user', json.encode(user));
+      return user;
+    }catch(error){
+      throw error;
+    }
+  }
+
+  static Future<List<Question>> getSecurityQuestions() async{
+    try{
+      var response = await http.get(appDomain + "/api/v1/user/get-security-questions");
+      var questions = json.decode(response.body)['questions'];
+      List<Question> _questions= [];
+      questions.keys.forEach((key) {
+        _questions.add(Question(id: key ,question: questions[key]));
+      });
+      return _questions;
+    }catch(error){
+      throw error;
+    }
+  }
+
+  static Future<http.Response> setSecurityQuestion(String pin, String securityQuestion, String securityAnswer) async{
+    try{
+      SharedPreferences _prefs = await SharedPreferences.getInstance();
+      var user = await App.getCurrentUser();
+      var response = await http.post(appDomain+'/api/v1/user/set-account-pin', 
+        body: {'pin': pin, 'securityQuestion': securityQuestion, 'securityAnswer': securityAnswer},
+        headers: {'x-access-token': user.token}  );
+      user.pinSet = true;
+      _prefs.remove('user');
+      _prefs.setString('user', json.encode(user));
+        return response;
+    }catch(error){
+      throw error;
+    }
+  }
+
 }

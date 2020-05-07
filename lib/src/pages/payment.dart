@@ -19,6 +19,7 @@ import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/themes/theme.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 import 'package:flutter_paystack/flutter_paystack.dart';
+import 'package:keyboard_avoider/keyboard_avoider.dart';
 // import 'package:paystack_flutter/paystack_flutter.dart';
 
 class Payment extends StatefulWidget{
@@ -42,6 +43,7 @@ class _PaymentState extends State<Payment>{
   String _cvv;
   int _expiryMonth = 0;
   int _expiryYear = 0;
+  String _addressString = "";
   // static const platform = const MethodChannel('maugost.com/paystack_flutter');
   static const paystack_backend_url = "https://infinite-peak-60063.herokuapp.com";
 
@@ -126,14 +128,17 @@ class _PaymentState extends State<Payment>{
                             fontWeight: FontWeight.w500,
                           ) ,
                   ),
-                  ListTile(
-                    leading: Icon(Icons.card_membership, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Azonka Wallet',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed('/wallet'),
+                    child: ListTile(
+                        leading: Icon(Icons.card_membership, color: LightColor.lightColor),
+                        title: TitleText(
+                                color: Colors.black ,
+                                text: 'Azonka Wallet',
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ) ,
+                      ),
                   ),
                   ListTile(
                     leading: Icon(Icons.credit_card, color: LightColor.lightColor),
@@ -171,7 +176,8 @@ class _PaymentState extends State<Payment>{
                             fontWeight: FontWeight.w500,
                           ) ,
                   ),
-                  ListTile(
+                  GestureDetector(onTap: (){ _signOutUser(context);},
+                    child: ListTile(
                     leading: Icon(Icons.arrow_back_ios, color: LightColor.lightColor),
                     title: TitleText(
                             color: Colors.black ,
@@ -180,6 +186,8 @@ class _PaymentState extends State<Payment>{
                             fontWeight: FontWeight.w500,
                           ) ,
                   )
+                  ,)
+                  
                 ]
               )
             )
@@ -188,7 +196,28 @@ class _PaymentState extends State<Payment>{
       ],
     );
   }
-
+  _signOutUser(BuildContext context) async{
+      App.isLoading(context);
+      var isSignedOut =  await App.signOutUser();
+      App.stopLoading(context);
+      return isSignedOut ? Navigator.of(context).pushReplacementNamed('/login') : Alert(
+                                context: context,
+                                type: AlertType.error,
+                                title: "Action Error",
+                                desc: "Some errors were encountered signing you out",
+                                buttons: [
+                                  DialogButton(
+                                    color: LightColor.orange,
+                                    child: Text(
+                                      "Ok",
+                                      style: TextStyle(color: Colors.white, fontSize: 20),
+                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                    width: 120,
+                                  )
+                                ],
+                              ).show();
+  }
   Widget _appBar() {
     return Container(
       padding: AppTheme.padding,
@@ -549,12 +578,31 @@ class _PaymentState extends State<Payment>{
     
   }
   processPayment(BuildContext context, List<AppProduct> cart) async{
-    if(_paymentTypeValue.isEmpty || _deliveryAddressSelected.isEmpty){
+    if(_paymentTypeValue.isEmpty ){
         return Alert(
           context: context,
           type: AlertType.error,
           title: "Action error",
-          desc: "Failed, please provide payment type and delivery location",
+          desc: "Failed, please provide payment type",
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Ok",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: () => Navigator.pop(context),
+              width: 120,
+            ),
+          ],
+        ).show();
+    }
+    if(_deliveryAddressSelected.isEmpty && _addressString.isEmpty){
+      return Alert(
+          context: context,
+          type: AlertType.error,
+          title: "Action error",
+          desc: "Failed, please provide delivery location",
           buttons: [
             DialogButton(
               color: LightColor.orange,
@@ -600,7 +648,7 @@ class _PaymentState extends State<Payment>{
       }
       try{
           App.isLoading(context);
-          await App.orderProduct("${total * 100}", '', cart, true, _deliveryAddressSelected, '');
+          await App.orderProduct("${total * 100}", '', cart, true, _deliveryAddressSelected, _addressString);
           
           cart.forEach( ( AppProduct product) async{
             await App.removeCartItem(product.id);
@@ -712,7 +760,7 @@ class _PaymentState extends State<Payment>{
         // var cart = json.encode(products);
         print(_cartResponse);
         await App.orderProduct("${amount * 100}",
-         _cartResponse.reference, products, false, _deliveryAddressSelected, '');
+         _cartResponse.reference, products, false, _deliveryAddressSelected, _addressString);
         // print(response.body);
         products.forEach( ( AppProduct product) async{
           await App.removeCartItem(product.id);
@@ -789,6 +837,39 @@ class _PaymentState extends State<Payment>{
 
     return 'ChargedFrom${platform}_${DateTime.now().millisecondsSinceEpoch}';
   }
+
+  Widget _addressEntryField() {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            'Enter Delivery Adddress',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          TextField(
+            scrollPadding: EdgeInsets.all(200),
+                    keyboardType: TextInputType.text,
+                    obscureText: false,
+                    onChanged: (value) {
+                      setState(() {
+                        _addressString = value;
+                      });
+                    },
+                    decoration: InputDecoration(
+                        border: InputBorder.none,
+                        fillColor: Color(0xfff3f3f4),
+                        filled: true,
+                    ))
+          
+        ],
+      ),
+    );
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -804,8 +885,10 @@ class _PaymentState extends State<Payment>{
           body: SafeArea(
             child: Container(
             
-              child:  Stack(
-                  children: [
+              child:  GestureDetector(
+                onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
+                child: Stack(
+                  children: <Widget>[
                     Container(
                       height: deviceHeight * 0.65,
                       child: SingleChildScrollView(
@@ -825,9 +908,21 @@ class _PaymentState extends State<Payment>{
                               SizedBox(
                                 height: 20
                               ),
+                              
                               __dividerDeliveryLocation(),
                               SizedBox(
-                                height: 10
+                                height: 4
+                              ),
+                              ListView(
+                                shrinkWrap: true,
+                                physics: ScrollPhysics(),
+                                reverse: true,
+                                children: [
+                                  _addressEntryField(),
+                                ].toList()
+                              ),
+                              SizedBox(
+                                height: 5
                               ),
                               GestureDetector(
                                 onTap: (){},
@@ -857,6 +952,39 @@ class _PaymentState extends State<Payment>{
                               SizedBox(
                                 height: 10
                               ),
+                               
+                              
+                              Container(
+                                    margin: EdgeInsets.symmetric(vertical: 10),
+                                    child: Row(
+                                      children: <Widget>[
+                                        SizedBox(
+                                          width: 20,
+                                        ),
+                                        Expanded(
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 10),
+                                            child: Divider(
+                                              thickness: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        Text('My Delivery Addresses'),
+                                        Expanded(
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 10),
+                                            child: Divider(
+                                              thickness: 1,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(
+                                          width: 20,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  
                               FutureBuilder(
                                 builder: (BuildContext context,AsyncSnapshot<List<Address>> snapshot){
                                   if(snapshot.connectionState == ConnectionState.done){
@@ -878,8 +1006,9 @@ class _PaymentState extends State<Payment>{
                       left: 0,
                       child: _payNowButton(context, state.userCart.products)
                       )
-                    ]
-                    )
+                  ],
+                )
+              )
                 
             ) ,)
         );

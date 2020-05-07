@@ -7,6 +7,7 @@ import 'package:flutter_ecommerce_app/src/model/app_state.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
 import 'package:flutter_ecommerce_app/src/model/data.dart';
 import 'package:flutter_ecommerce_app/src/pages/home_page.dart';
+import 'package:flutter_ecommerce_app/src/pages/ordersPage.dart';
 import 'package:flutter_ecommerce_app/src/pages/shoping_cart_page.dart';
 import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
@@ -88,6 +89,8 @@ class _MainPageState extends State<MainPage> {
   loadCart(BuildContext context) async{
       User user = await App.getCurrentUser();
       var cart = await  App.getUserCart(user.token);
+      // var userOrder = await App.getUserOrders();
+      // print(userOrder.body);
       StoreProvider.of<AppState>(context).dispatch(CartItemsFetched(cart));
   }
 
@@ -310,7 +313,7 @@ class _MainPageState extends State<MainPage> {
       case 0:
         return MyHomePage();
       case 1: 
-        return MyHomePage();
+        return OrderPage();
       case 2:
         return Align(
                 alignment: Alignment.topCenter,
@@ -397,7 +400,12 @@ class _MainPageState extends State<MainPage> {
                             fontWeight: FontWeight.w500,
                           ) ,
                   ),
-                  ListTile(
+                  GestureDetector(
+                    onTap: () {
+                      StoreProvider.of<AppState>(context).dispatch(BottomIconSelected(1));
+                      Navigator.pop(context);
+                    },
+                    child: ListTile(
                     leading: Icon(Icons.history, color: LightColor.lightColor),
                     title: TitleText(
                             color: Colors.black ,
@@ -405,15 +413,18 @@ class _MainPageState extends State<MainPage> {
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
                           ) ,
+                  )
                   ),
-                  ListTile(
-                    leading: Icon(Icons.card_membership, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Azonka Wallet',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(onTap: () => Navigator.of(context).pushNamed('/wallet'),
+                    child: ListTile(
+                      leading: Icon(Icons.card_membership, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Azonka Wallet',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    ),
                   ),
                   ListTile(
                     leading: Icon(Icons.credit_card, color: LightColor.lightColor),
@@ -442,16 +453,21 @@ class _MainPageState extends State<MainPage> {
                             fontWeight: FontWeight.w500,
                           ) ,
                   ),
-                  ListTile(
-                    leading: Icon(Icons.store, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'My Store',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushReplacementNamed('/wallet'),
+                    child: ListTile(
+                      leading: Icon(Icons.store, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'My Store',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    ),
                   ),
-                  ListTile(
+                  GestureDetector(
+                    onTap: (){ _signOutUser(context);},
+                   child: ListTile(
                     leading: Icon(Icons.arrow_back_ios, color: LightColor.lightColor),
                     title: TitleText(
                             color: Colors.black ,
@@ -459,7 +475,7 @@ class _MainPageState extends State<MainPage> {
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
                           ) ,
-                  )
+                  ), )
                 ]
               )
             )
@@ -474,11 +490,33 @@ class _MainPageState extends State<MainPage> {
       var cart = await  App.getUserCart(user.token);
       return cart;
   }
+  _signOutUser(BuildContext context) async{
+      App.isLoading(context);
+      var isSignedOut =  await App.signOutUser();
+      return isSignedOut ? Navigator.of(context).pushReplacementNamed('/login') : Alert(
+                                context: context,
+                                type: AlertType.error,
+                                title: "Action Error",
+                                desc: "Some errors were encountered signing you out",
+                                buttons: [
+                                  DialogButton(
+                                    color: LightColor.orange,
+                                    child: Text(
+                                      "Ok",
+                                      style: TextStyle(color: Colors.white, fontSize: 20),
+                                    ),
+                                    onPressed: () => Navigator.pop(context),
+                                    width: 120,
+                                  )
+                                ],
+                              ).show();
+  }
 
   Future<User> getCurrentUser() async{
     try{
         var user = await App.getCurrentUser();
-      
+        var res = await App.getUserOrders();
+        print(res.length);
       // var cart = await  App.getUserCart(user.token);
       return user;
     }catch(error){
