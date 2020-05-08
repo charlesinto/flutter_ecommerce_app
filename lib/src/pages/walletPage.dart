@@ -292,7 +292,41 @@ class _WalletPageState extends State<WalletPage>{
       ],)
     );
   }
+  sendMoney(BuildContext context){
 
+  }
+  topUpMoney(BuildContext context){
+    return Alert(
+        context: context,
+        title: "Top Up Wallet",
+        content: GestureDetector(
+          onTap: () => FocusScope.of(context).requestFocus(FocusNode()) ,
+          child: Column(
+          children: <Widget>[
+              TextFormField(
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  icon: Icon(Icons.monetization_on),
+                  labelText: 'Amount',
+                ),
+              ),
+              SizedBox(height: 20)
+            ],
+          )
+        ),
+        buttons: [
+          DialogButton(
+            onPressed: () {},
+            child: Text(
+              "Top Up",
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          )
+        ]).show();
+  }
+  withdrawMoney(BuildContext context){
+    
+  }
   Widget _actionBar(){
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.0),
@@ -306,12 +340,16 @@ class _WalletPageState extends State<WalletPage>{
             // crossAxisAlignment: CrossAxisAlignment.start,
             
             children: [
-              Card(
+              GestureDetector(
+                onTap: () {},
+                child: Card(
+              
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 // radius: Radius.circular(20.0),
                 child: Icon(Icons.card_giftcard, color: LightColor.orange,),
-              ),),
+              ),)
+              ),
               Container(
                 margin: EdgeInsets.symmetric(vertical: 8.0),
                 child: TitleText(
@@ -329,12 +367,15 @@ class _WalletPageState extends State<WalletPage>{
             // crossAxisAlignment: CrossAxisAlignment.start,
             
             children: [
-              Card(
+              GestureDetector(
+                onTap: () => topUpMoney(context),
+                child: Card(
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 // radius: Radius.circular(20.0),
                 child: Icon(Icons.credit_card, color: LightColor.orange,),
               ),),
+              ),
               Container(
                 margin: EdgeInsets.symmetric(vertical: 8.0),
                 child: TitleText(
@@ -352,12 +393,15 @@ class _WalletPageState extends State<WalletPage>{
             // crossAxisAlignment: CrossAxisAlignment.start,
             
             children: [
-              Card(
+              GestureDetector(
+                onTap: (){},
+                child: Card(
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 // radius: Radius.circular(20.0),
                 child: Icon(Icons.arrow_drop_down_circle, color: LightColor.orange,),
-              ),),
+              ),)
+              ),
               Container(
                 margin: EdgeInsets.symmetric(vertical: 8.0),
                 child: TitleText(
