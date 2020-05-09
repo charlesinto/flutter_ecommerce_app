@@ -271,8 +271,8 @@ class _PaymentState extends State<Payment>{
   Widget _detailWidget(Cart cart) {
     return DraggableScrollableSheet(
       maxChildSize: .8,
-      initialChildSize: .3,
-      minChildSize: .3,
+      initialChildSize: .2,
+      minChildSize: .2,
       builder: (context, scrollController) {
         return Container(
           padding: AppTheme.padding.copyWith(bottom: 0),
@@ -870,6 +870,24 @@ class _PaymentState extends State<Payment>{
       ),
     );
   }
+
+  getUserLocationAddress(BuildContext context) async{
+    try{
+      var _locationData = await App.getUserLocation();
+      print(_locationData);
+
+      var response = await App.getAddressFromLocation(_locationData);
+      var googleResonse = json.decode(response.body);
+      print(response.body);
+      if(googleResonse['status'] == "REQUEST_DENIED"){
+        return App.showToast(context, 'Some error encountered while fetching location') ;
+      }
+      //update state with address
+    }catch(error){
+      print(error);
+      throw error;
+    }
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -906,7 +924,7 @@ class _PaymentState extends State<Payment>{
                               ),
                               _paymentType(),
                               SizedBox(
-                                height: 20
+                                height:10
                               ),
                               
                               __dividerDeliveryLocation(),
@@ -925,7 +943,9 @@ class _PaymentState extends State<Payment>{
                                 height: 5
                               ),
                               GestureDetector(
-                                onTap: (){},
+                                onTap: (){
+                                  getUserLocationAddress(context);
+                                },
                                 child: Container(
                                 margin: EdgeInsets.symmetric(horizontal: 24.0),
                                 child: Row(

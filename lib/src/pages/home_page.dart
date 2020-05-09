@@ -127,21 +127,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 
                 margin: EdgeInsets.symmetric(vertical: 10),
                 width: AppTheme.fullWidth(context),
-                height: AppTheme.fullWidth(context) * 1,
-                child: GridView.count(
-                    // primary: false,
-                    crossAxisSpacing: 10,
-                    // mainAxisSpacing: 10,
-                    childAspectRatio: 1 / 2,
-                    crossAxisCount: 2,
-                    // gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    //     crossAxisCount: 2, 
-                    //     childAspectRatio: 1 / 2,
-                    //     // mainAxisSpacing: 30,
-                    //     crossAxisSpacing: 20
-                    //     ), 
-                    padding: EdgeInsets.only(left: 20, right: 20.0),
-                    scrollDirection: Axis.vertical,
+                height: AppTheme.fullWidth(context) * .7,
+                child: GridView(
+                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 1,
+                        childAspectRatio: 4 / 3,
+                        mainAxisSpacing: 30,
+                        crossAxisSpacing: 20), 
+                    padding: EdgeInsets.only(left: 20),
+                    scrollDirection: Axis.horizontal,
                     // children: AppData.productList
                     //     .map((product) => ProductCard(
                     //           product: product,
@@ -210,6 +204,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _advertWidget(AdvertProduct advert){
       // print(advert.name);
+      print('name: ' + advert.name + ' lenght: '+ advert.productAd.length.toString());
+      if(advert.productAd.length <= 0){
+        return Container();
+      }
       return Container(
       padding: EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -227,7 +225,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 
                 margin: EdgeInsets.symmetric(vertical: 10),
                 width: AppTheme.fullWidth(context),
-                height: AppTheme.fullWidth(context) * 1,
+                height: AppTheme.fullWidth(context) * .7,
                 child: GridView(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
@@ -235,7 +233,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         mainAxisSpacing: 20,
                         crossAxisSpacing: 20), 
                     padding: EdgeInsets.only(left: 20),
-                    scrollDirection: Axis.vertical,
+                    scrollDirection: Axis.horizontal,
                     // children: AppData.productList
                     //     .map((product) => ProductCard(
                     //           product: product,
@@ -251,6 +249,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _adverCategoryWidgets(List<AdvertProduct> adverts){
+    
     return Container(
       child: Column(
         children: adverts.map((advert) {

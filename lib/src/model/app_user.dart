@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_ecommerce_app/src/model/app_banks.dart';
 import 'package:flutter_ecommerce_app/src/model/app_wallet.dart';
 
 class User{
@@ -36,6 +37,7 @@ class User{
   final String tosAcceptedByIp;
   final int lastSeenAt;
   Wallet wallet;
+  List<Bank> banks = [];
   final String referredBy;
   final String sellerAgent;
 
@@ -48,7 +50,7 @@ class User{
      , @required this.passwordResetToken, @required this.passwordResetTokenExpiresAt, @required this.pinSet
      , @required this.profileImage, @required this.rating, @required this.referralCode, @required this.referredBy,
      @required this.sellerAgent, @required this.sellerApproved, @required this.sellerIdentification, @required this.token
-     , @required this.tosAcceptedByIp, @required this.type, this.wallet});
+     , @required this.tosAcceptedByIp, @required this.type, this.wallet, this.banks});
   
   Map toJson(){
     return {
@@ -84,7 +86,8 @@ class User{
       'lastSeenAt': lastSeenAt,
       'referredBy': referredBy,
       'sellerAgent': sellerAgent,
-      'wallet': wallet
+      'wallet': wallet,
+      "banks": banks
     };
   }
 }

@@ -190,7 +190,7 @@ class _LoginPageState extends State<LoginPage>{
         response = await App.login(_emailAddress, _password);
         
         var data = json.decode(response.body);
-        if(data['success'] == false || data['message'] == 'Please verify your email address'){
+        if(data['success'] == false && data['message'] == 'Please verify your email address'){
            App.stopLoading(context);
            _preferences.setString('email', _emailAddress);
            _preferences.setString('password', _password);

@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_ecommerce_app/src/model/app_banks.dart';
+import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_question.dart';
 import 'package:flutter_ecommerce_app/src/model/app_transaction.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
@@ -10,10 +13,12 @@ import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/themes/theme.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 import 'package:flutter_ecommerce_app/util/app.dart';
+import 'package:flutter_ecommerce_app/util/constants.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
-
+import 'package:flutter/services.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state.dart';
+import 'package:flutter_paystack/flutter_paystack.dart';
 
 class WalletPage extends StatefulWidget{
   @override
@@ -30,6 +35,123 @@ class _WalletPageState extends State<WalletPage>{
   String _answerValid = "";
   String _pinValid = "";
   String _pin = "";
+  String _errorMessage = "";
+  String _amount = "";static const paystack_backend_url = "https://infinite-peak-60063.herokuapp.com";
+  String transcation = "";
+  bool _inProgress = false;
+  String _cardNumber;
+  String _cvv;
+  int _expiryMonth = 0;
+  int _expiryYear = 0;
+  String _addressString = "";
+  String _walletId = "";
+  int totalAmount = 0;
+  Bank bank;
+  Bank _selectedBank;
+  String _selectedBankId = "";
+  String _userPin = "";
+  void initState() {
+    PaystackPlugin.initialize(
+            publicKey: pStackPublicKey);
+    super.initState();
+  }
+  String _getReference() {
+    String platform;
+    if (Platform.isIOS) {
+      platform = 'iOS';
+    } else {
+      platform = 'Android';
+    }
+
+    return 'ChargedFrom${platform}_${DateTime.now().millisecondsSinceEpoch}';
+  }
+  handleBilling(BuildContext context, int totalAmount) async{
+    
+    var user = await App.getCurrentUser();
+    Charge charge = Charge()
+      ..amount = totalAmount * 100 // In base currency
+      ..email = user.email
+      ..card = _getCardFromUI();
+
+    
+      charge.reference = _getReference();
+    
+
+    try {
+      CheckoutResponse _cartResponse = await PaystackPlugin.checkout(
+        context,
+        method: CheckoutMethod.card,
+        charge: charge,
+        fullscreen: false,
+        
+      );
+      
+      print('Response = $_cartResponse');
+      if(_cartResponse.message.toLowerCase() == 'success'){
+        App.isLoading(context);
+        // var cart = json.encode(products);
+        print(_cartResponse);
+        await App.topUpWallet((totalAmount * 100).toString(), _cartResponse.reference);
+
+        App.stopLoading(context);
+        return Alert(
+            context: context,
+            type: AlertType.success,
+            title: "Payment Successful",
+            desc: "Your wallet has been funded with NGN ${App.formatAsMoney(totalAmount)}",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+      }
+    }catch(error){
+        App.stopLoading(context);
+        print('Some errors were encountered: '+ error);
+        
+        Alert(
+            context: context,
+            type: AlertType.warning,
+            title: "Action Error",
+            desc: "Some error were encountered while processing payment",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  StoreProvider.of<AppState>(context).dispatch(ClearCartItems());
+                  Navigator.pop(context);
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+        throw error;
+      }
+  }
+  PaymentCard _getCardFromUI() {
+    // Using just the must-required parameters.
+    return PaymentCard(
+      number: _cardNumber,
+      cvc: _cvv,
+      expiryMonth: _expiryMonth,
+      expiryYear: _expiryYear,
+    );
+  }
   Widget _appDrawer(BuildContext context, User user){
     return Column(
       children: [
@@ -51,14 +173,6 @@ class _WalletPageState extends State<WalletPage>{
                         width: 75,
                         height:75,
                       ),
-                    // CircleAvatar(
-                    //   radius: 20,
-                    //   backgroundColor: Colors.white,
-                    //   child: Image.asset('assets/logo.png',
-                    //     fit: BoxFit.contain,
-                    //     width: 200,
-                    //     height:200,
-                    //   ),)
                   ),
                   Container(
                     child: TitleText(
@@ -256,7 +370,81 @@ class _WalletPageState extends State<WalletPage>{
             ],)
           );
   }
-
+  
+  Widget _banksField(String title, List<Bank> userBanks, StateSetter stateSet) {
+    _selectedBank = null;
+    return Container(
+      
+      margin: EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          SizedBox(
+            height: 10,
+          ),
+          Container(
+            
+            child: 
+            // TextFormField(
+            //   initialValue: userBanks[0].name,
+            // )
+            new DropdownButtonHideUnderline(
+              child: new InputDecorator(
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                  hintText: 'Choose Bank',
+                ),
+                isEmpty: _selectedBank == null ,
+                child: new DropdownButton<Bank>(
+                  value: _selectedBank,
+                  isDense: true,
+                  onChanged: (Bank  value) {
+                    stateSet(() {
+                      _selectedBank = value;
+                    });
+                  },
+                  items: userBanks.map((Bank value) {
+                    return new DropdownMenuItem<Bank>(
+                      value: value,
+                      child: Text(value.name + " - "+ value.accountNumber)
+                      //  ListTile(
+                      //       title: TitleText(text: value.name),
+                      //       subtitle: Row(
+                      //         children: <Widget>[
+                      //           TitleText(
+                      //             text: value.accountNumber,
+                      //             color: Colors.grey,
+                      //             fontSize: 11,
+                      //           ),
+                      //           SizedBox(width: 6),
+                      //           TitleText(
+                      //             text: '-',
+                      //             color: Colors.grey,
+                      //             fontSize: 11,
+                      //           ),
+                      //           TitleText(
+                      //             text: value.accountName,
+                      //             color: Colors.grey,
+                      //             fontSize: 11,
+                      //           ),
+                      //         ],
+                      //       ),
+                      //     ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            )
+          )
+        ],
+      ),
+    );
+  }
   Widget _moneyBalance(User _user){
     return  Container(
       height: 80,
@@ -278,7 +466,7 @@ class _WalletPageState extends State<WalletPage>{
           ),
             Container(
             child: TitleText(
-              text: _user == null ? '0.00' : App.formatAsMoney(_user.wallet.balance),
+              text: _user == null ? '0.00' : App.formatAsMoney(_user.wallet.balance ~/ 100),
               fontSize: 30,
               color: Colors.white,
               fontWeight: FontWeight.w700,
@@ -293,30 +481,181 @@ class _WalletPageState extends State<WalletPage>{
     );
   }
   sendMoney(BuildContext context){
-
+    var deviceHeight = MediaQuery.of(context).size.height;
+    return Alert(
+        context: context,
+        title: "Send Money",
+        content: StatefulBuilder(
+          
+          builder: (BuildContext context, StateSetter sta){
+              return GestureDetector(
+                  onTap: () => FocusScope.of(context).requestFocus(FocusNode()) ,
+                  child: Container(
+                    height: deviceHeight * 0.4,
+                    child: SingleChildScrollView(
+                      child:Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        'Wallet ID',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      TextField(
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        sta(() {
+                          _errorMessage = "";
+                          // var newValue = value.split(',').join('');
+                          // print(App.formatAsMoney(int.parse(_amount)));
+                          _walletId = value;
+                          // _amount = App.formatAsMoney(int.parse(value));
+                        });
+                      },
+                      decoration: InputDecoration(
+                          border: InputBorder.none,
+                          fillColor: Color(0xfff3f3f4),
+                          filled: true
+                      )),
+                      SizedBox(height: 20),
+                    SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        'Amount',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      TextField(
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        sta(() {
+                          _errorMessage = "";
+                          // var newValue = value.split(',').join('');
+                          // print(App.formatAsMoney(int.parse(_amount)));
+                          _amount = value;
+                          // _amount = App.formatAsMoney(int.parse(value));
+                        });
+                      },
+                      decoration: InputDecoration(
+                          border: InputBorder.none,
+                          fillColor: Color(0xfff3f3f4),
+                          filled: true
+                      )),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        'Security Pin',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      TextField(
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        sta(() {
+                          _errorMessage = "";
+                          // var newValue = value.split(',').join('');
+                          // print(App.formatAsMoney(int.parse(_amount)));
+                          _userPin = value;
+                          // _amount = App.formatAsMoney(int.parse(value));
+                        });
+                      },
+                      decoration: InputDecoration(
+                          border: InputBorder.none,
+                          fillColor: Color(0xfff3f3f4),
+                          filled: true
+                      )),
+                    ],
+                  ) ,
+                      
+                    )
+                  )
+                );
+          }),
+        buttons: [
+          DialogButton(
+            onPressed: () {
+              if(_userPin.isEmpty || _amount.isEmpty || _walletId.isEmpty){
+                return ;
+              }
+              hanldeSendMoney(_userPin, int.parse(_amount), _walletId);
+              // handleBilling(context, int.parse(_amount));
+            },
+            child: Text(
+              "Send",
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          )
+        ]).show();
   }
   topUpMoney(BuildContext context){
+    var deviceHeight = MediaQuery.of(context).size.height;
     return Alert(
         context: context,
         title: "Top Up Wallet",
-        content: GestureDetector(
-          onTap: () => FocusScope.of(context).requestFocus(FocusNode()) ,
-          child: Column(
-          children: <Widget>[
-              TextFormField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  icon: Icon(Icons.monetization_on),
-                  labelText: 'Amount',
-                ),
-              ),
-              SizedBox(height: 20)
-            ],
-          )
-        ),
+        content: StatefulBuilder(
+          
+          builder: (BuildContext context, StateSetter sta){
+              return GestureDetector(
+                  onTap: () => FocusScope.of(context).requestFocus(FocusNode()) ,
+                  child: Container(
+                    height: deviceHeight * 0.25,
+                    child: SingleChildScrollView(
+                      child:Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SizedBox(
+                        height: 10,
+                      ),
+                      Text(
+                        'Amount',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      TextField(
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        sta(() {
+                          _errorMessage = "";
+                          // var newValue = value.split(',').join('');
+                          // print(App.formatAsMoney(int.parse(_amount)));
+                          _amount = value;
+                          // _amount = App.formatAsMoney(int.parse(value));
+                        });
+                      },
+                      decoration: InputDecoration(
+                          border: InputBorder.none,
+                          fillColor: Color(0xfff3f3f4),
+                          filled: true
+                      )),
+                      SizedBox(height: 20)
+                    ],
+                  ) ,
+                      
+                    )
+                  )
+                );
+          }),
         buttons: [
           DialogButton(
-            onPressed: () {},
+            onPressed: () {
+              if(_amount.isEmpty){
+                return ;
+              }
+              handleBilling(context, int.parse(_amount));
+            },
             child: Text(
               "Top Up",
               style: TextStyle(color: Colors.white, fontSize: 20),
@@ -324,8 +663,99 @@ class _WalletPageState extends State<WalletPage>{
           )
         ]).show();
   }
-  withdrawMoney(BuildContext context){
-    
+  withdrawMoney(BuildContext context) async{
+    var deviceHeight = MediaQuery.of(context).size.height;
+    App.isLoading(context);
+    var user = await App.getUserBanks();
+    App.stopLoading(context);
+    print(user.banks.length);
+    return Alert(
+        context: context,
+        title: "Withdraw to Bank",
+        content: StatefulBuilder(
+          
+          builder: (BuildContext context, StateSetter sta){
+              return GestureDetector(
+                  onTap: () => FocusScope.of(context).requestFocus(FocusNode()) ,
+                  child: Container(
+                    height: deviceHeight * 0.5,
+                    child: SingleChildScrollView(
+                      child:Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    SizedBox(
+                        height: 10,
+                      ),
+                      _banksField("Withdraw Money", user.banks, sta),
+                      SizedBox(height: 20),
+                      Text(
+                        'Amount To Withdraw',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      TextField(
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        sta(() {
+                          _errorMessage = "";
+                          // var newValue = value.split(',').join('');
+                          // print(App.formatAsMoney(int.parse(_amount)));
+                          _amount = value;
+                          // _amount = App.formatAsMoney(int.parse(value));
+                        });
+                      },
+                      decoration: InputDecoration(
+                          border: InputBorder.none,
+                          fillColor: Color(0xfff3f3f4),
+                          filled: true
+                      )),
+                      SizedBox(height: 20),
+                      Text(
+                        'Security Pin',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      SizedBox(
+                        height: 10,
+                      ),
+                      TextField(
+                      keyboardType: TextInputType.number,
+                      onChanged: (value) {
+                        sta(() {
+                          _errorMessage = "";
+                          // var newValue = value.split(',').join('');
+                          // print(App.formatAsMoney(int.parse(_amount)));
+                          _userPin = value;
+                          // _amount = App.formatAsMoney(int.parse(value));
+                        });
+                      },
+                      decoration: InputDecoration(
+                          border: InputBorder.none,
+                          fillColor: Color(0xfff3f3f4),
+                          filled: true
+                      )),
+                    ],
+                  ) ,
+                      
+                    )
+                  )
+                );
+          }),
+        buttons: [
+          DialogButton(
+            onPressed: () {
+              if(_selectedBank == null || _amount.isEmpty || _userPin.isEmpty){
+                return ;
+              }
+              handleTransfer(context, int.parse(_amount) * 100, _selectedBank, _userPin);
+            },
+            child: Text(
+              "Withdraw",
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          )
+        ]).show();
   }
   Widget _actionBar(){
     return Container(
@@ -341,7 +771,9 @@ class _WalletPageState extends State<WalletPage>{
             
             children: [
               GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  sendMoney(context);
+                },
                 child: Card(
               
               child: CircleAvatar(
@@ -394,7 +826,7 @@ class _WalletPageState extends State<WalletPage>{
             
             children: [
               GestureDetector(
-                onTap: (){},
+                onTap: (){ withdrawMoney(context);},
                 child: Card(
               child: CircleAvatar(
                 backgroundColor: Colors.white,
@@ -416,6 +848,168 @@ class _WalletPageState extends State<WalletPage>{
       )
       
       );
+  }
+  handleTransfer(BuildContext context, int amount, Bank selectedBank, String userPin) async{
+    try{
+      
+      App.isLoading(context);
+      var response = await App.requestWalletWithdraw(amount.toString(), userPin, 'NGN');
+      var serverResponse = json.decode(response.body);
+      if(serverResponse['success'] == false){
+        App.stopLoading(context);
+        return Alert(
+            context: context,
+            type: AlertType.warning,
+            title: "Action Error",
+            desc: "${serverResponse['message']}",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  setState(() {
+                    selectedBank = null;
+                    
+                  });
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+      }
+      App.stopLoading(context);
+      return Alert(
+            context: context,
+            type: AlertType.success,
+            title: "Payment Successful",
+            desc: "Your request to withdraw NGN ${App.formatAsMoney((amount ~/ 100))} is been processed",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  setState(() {
+                    selectedBank = null;
+                    
+                  });
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+    }catch(error){
+      print(error);
+      return Alert(
+            context: context,
+            type: AlertType.warning,
+            desc: "Some errors were encountered" ,
+            title: "Action Error",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  setState(() {
+                    selectedBank = null;
+                    
+                  });
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+    }
+  }
+  hanldeSendMoney(String pin, int amount, String walletId) async{
+    try{
+      
+      App.isLoading(context);
+      var response = await App.sendMoney(amount.toString(), walletId, pin);
+      var serverResponse = json.decode(response.body);
+      if(serverResponse['success'] == false){
+        App.stopLoading(context);
+        return Alert(
+            context: context,
+            type: AlertType.warning,
+            title: "Action Error",
+            desc: "${serverResponse['message']}",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+      }
+      App.stopLoading(context);
+      return Alert(
+            context: context,
+            type: AlertType.success,
+            title: "Payment Successful",
+            desc: "Your request to send NGN ${App.formatAsMoney((amount ~/ 100))} is been processed",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+    }catch(error){
+      print(error);
+      return Alert(
+            context: context,
+            type: AlertType.warning,
+            desc: "Some errors were encountered" ,
+            title: "Action Error",
+            buttons: [
+              DialogButton(
+                color: LightColor.orange,
+                child: Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white, fontSize: 20),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                width: 120,
+              ),
+            ],
+          ).show();
+    }
   }
   Future<User> getCurrentUser(BuildContext context) async{
     try{
@@ -460,7 +1054,7 @@ class _WalletPageState extends State<WalletPage>{
     return date.toString();
   }
   Widget _renderUserHistory(Wallet wallet){
-    return Column(children: wallet.transactions.map((Transaction _transaction){
+    return Column(children: wallet.transactions.map(( _transaction){
                 // print(json.encode(_transaction));
                 return Container(
                   
@@ -494,7 +1088,7 @@ class _WalletPageState extends State<WalletPage>{
                                 color: LightColor.orange,
                               ),
                               TitleText(
-                                text: App.formatAsMoney(_transaction.amount),
+                                text: App.formatAsMoney(_transaction.amount ~/ 100),
                                 fontSize: 16,
                                 color: LightColor.orange,
                               )
@@ -766,6 +1360,9 @@ class _WalletPageState extends State<WalletPage>{
   Widget build(BuildContext context) {
     // TODO: implement build
     return Scaffold(
+      floatingActionButton: IconButton(icon: Icon(Icons.add_circle), 
+        iconSize: 40.0,
+        onPressed: (){}, color: LightColor.orange,),
       key: _drawerWidget,
       endDrawer: Drawer(
         child: _appDrawer(context, null)

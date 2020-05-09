@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
 import 'package:flutter_ecommerce_app/src/model/app_address.dart';
 import 'package:flutter_ecommerce_app/src/model/app_advert_product.dart';
+import 'package:flutter_ecommerce_app/src/model/app_banks.dart';
 import 'package:flutter_ecommerce_app/src/model/app_cartlist.dart';
 import 'package:flutter_ecommerce_app/src/model/app_order.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
@@ -19,6 +20,8 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './constants.dart';
+import 'package:location/location.dart';
+import 'package:toast/toast.dart';
 
 class App{
   SharedPreferences _preferences;
@@ -535,5 +538,102 @@ class App{
       throw error;
     }
   }
+  static Future<http.Response> topUpWallet(String amount, String transactionReference) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = http.post(appDomain+'/api/v1/user/wallet/topup',body: {
+        'amount': amount,
+        'transactionReference': transactionReference
+      },
+        headers: {'x-access-token': user.token});
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<LocationData> getUserLocation() async{
+    Location location = new Location();
+    var _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return null;
+      }
+    }
 
+    var _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return null;
+      }
+    }
+
+    var _locationData = await location.getLocation();
+
+    return _locationData;
+
+  }
+  static Future<http.Response> getAddressFromLocation(LocationData locationData) async{
+    try{
+      var response = await http.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=${locationData.latitude},${locationData.longitude}&sensor=true&key=$apiKey');
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static showToast(BuildContext context, message){
+    Toast.show(message, context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+  }
+  static Future<User> getUserBanks() async{
+    try{
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      var startRecord = 0;
+      var endRecord = 20;
+      var user = await App.getCurrentUser();
+      var res = await http.get(appDomain+'/api/v1/user/bank-account/get/$startRecord/$endRecord', headers: {'x-access-token': user.token});
+      var response = json.decode(res.body);
+      var banks = response['bankAccounts'];
+      List<Bank> _banks = [];
+
+      banks.forEach((bank){
+        _banks.add(
+          Bank(accountName:bank['accountName'] , accountNumber:bank['accountNumber']  ,active: bank['active']  ,
+          code: bank['code']  ,createdAt: bank['createdAt']  ,
+          gateway: bank['gateway'] ,id: bank['id'] ,longcode:bank['longcode']  ,name: bank['name'] ,
+          owner:bank['owner']  ,slug:bank['slug']  )
+        );
+      });
+      user.banks = _banks;
+      prefs.remove('user');
+      prefs.setString('user', json.encode(user));
+      return user;
+      
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> requestWalletWithdraw(String amount, String pin, String currency) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.post(appDomain+'/api/v1/user/wallet/request-withdrawal', body: {
+        'amount': amount, 'pin': pin, 'currency': currency
+      }, 
+          headers: {'x-access-token': user.token});
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> sendMoney(String amount, String receiver, String pin) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.post(appDomain+'/api/v1/user/wallet/wallet-transfer', body: {
+                'amount': amount, 'receiver': receiver, 'currency': 'NGN', 'pin': pin
+              }, headers: {'x-access-token': user.token});
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
 }
