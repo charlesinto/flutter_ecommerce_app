@@ -2,6 +2,7 @@
 import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
 import 'package:flutter_ecommerce_app/src/model/app_cartlist.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
+import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state_products.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
 import 'package:flutter_ecommerce_app/src/wigets/product_card.dart';
@@ -54,4 +55,18 @@ class RemoveCartItem{
 
 class ClearCartItems{
   ClearCartItems();
+}
+
+class SearchByCategory{
+  final ProductCategory payload;
+  SearchByCategory(this.payload);
+}
+
+class SearchProduct{
+  SearchProduct();
+}
+
+class SearchStringChange{
+  final String payload;
+  SearchStringChange(this.payload);
 }

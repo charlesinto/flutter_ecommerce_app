@@ -170,8 +170,8 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
                       children: <Widget>[
                         _icon(Icons.home,context, state.bottomIconIndex == 0, 0),
                         _icon(Icons.history,context, state.bottomIconIndex == 1, 1),
-                        _icon(Icons.shopping_basket,context, state.bottomIconIndex == 2, 2),
-                        _icon(Icons.favorite_border,context, state.bottomIconIndex== 3, 3),
+                        _icon(Icons.shopping_cart,context, state.bottomIconIndex == 2, 2),
+                        // _icon(Icons.favorite_border,context, state.bottomIconIndex== 3, 3),
                       ],
                     ),
                   ),

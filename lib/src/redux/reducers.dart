@@ -7,7 +7,7 @@ import 'package:flutter_ecommerce_app/src/model/app_state.dart';
 import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/util/app.dart';
 
-AppState reducer(AppState prevState, dynamic action){
+AppState reducer(AppState prevState, dynamic action) {
   
   AppState newState = AppState.fromAppState(prevState);
   if(action is AppStateProductsFetched){
@@ -101,6 +101,18 @@ AppState reducer(AppState prevState, dynamic action){
   }
   if(action is ClearCartItems){
     newState.userCart = Cart(products: []);
+  }
+  if(action is SearchProduct){
+    // newState.searchString = action.payload;             
+     App.searchProduct(newState.searchString).then((product){
+       newState.searchResult = product;
+     });
+  }
+  if(action is SearchByCategory){
+    newState.searchCategory = action.payload;
+  }
+  if(action is SearchStringChange){
+    newState.searchString = action.payload;
   }
   return newState;
 }

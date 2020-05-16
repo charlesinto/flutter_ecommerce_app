@@ -149,24 +149,36 @@ class _PaymentState extends State<Payment>{
                             fontWeight: FontWeight.w500,
                           ) ,
                   ),
-                  ListTile(
-                    leading: Icon(Icons.settings, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Settings',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/settings');
+                    },
+                    child: ListTile(
+                      leading: Icon(Icons.settings, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Settings',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
-                  ListTile(
-                    leading: Icon(Icons.call, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Costumer Service',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
-                  ),
+                    GestureDetector(
+                      onTap: (){
+                        Navigator.pop(context);
+                        Navigator.of(context).pushNamed('/customerService');
+                      },
+                      child: ListTile(
+                        leading: Icon(Icons.call, color: LightColor.lightColor),
+                        title: TitleText(
+                                color: Colors.black ,
+                                text: 'Costumer Service',
+                                fontSize: 18,
+                                fontWeight: FontWeight.w500,
+                              ) ,
+                      )
+                    ),
                   ListTile(
                     leading: Icon(Icons.store, color: LightColor.lightColor),
                     title: TitleText(
@@ -325,6 +337,7 @@ class _PaymentState extends State<Payment>{
                 ),
                 // _availableSize(),
                 _item(cart.products),
+                _totalDeliveryPrice(cart.products),
                 _totalPrice(cart.products)
                 // _availableColor(),
                 // SizedBox(
@@ -340,6 +353,37 @@ class _PaymentState extends State<Payment>{
       },
     );
   }
+  Widget _totalDeliveryPrice(List<AppProduct> products){
+    var total = 0;
+    products.forEach((product){
+      total += product.finalPrice * product.orderNumber;
+    });
+
+    return Row(
+      // mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(
+          'Delivery/Shipping Fee',
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: Colors.black,
+            
+          ),
+        ) ),
+        SizedBox(width: 8.0),
+        Expanded(
+          flex: 1,
+          child: TitleText(
+          color: Colors.black,
+          text: "NGN ${App.formatAsMoney(0)}",
+          fontWeight: FontWeight.w400,
+          fontSize: 15.0,
+        ))
+      ]
+    );
+  }
   Widget _totalPrice(List<AppProduct> products){
     var total = 0;
     products.forEach((product){
@@ -349,25 +393,25 @@ class _PaymentState extends State<Payment>{
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        TitleText(
+        Expanded(
+          flex: 3,
+          child: Text(
+          'Total',
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: Colors.black,
+            
+          ),
+        ) ),
+        SizedBox(width: 8.0),
+        Expanded(
+          flex: 1,
+          child: TitleText(
           color: Colors.black,
-          text: 'Total',
-          fontSize: 18.0,
+          text: "NGN ${App.formatAsMoney(total)}",
           fontWeight: FontWeight.w800,
-        ),
-        SizedBox(width: 8.0),
-        TitleText(
-          color: Colors.red,
-          text: 'NGN',
-          fontSize: 14.0,
-        ),
-        SizedBox(width: 8.0),
-        TitleText(
-          color: Colors.black,
-          text: "${App.formatAsMoney(total)}",
-          fontWeight: FontWeight.w600,
-          fontSize: 18.0,
-        )
+          fontSize: 15.0,
+        ))
       ]
     );
   }

@@ -115,15 +115,9 @@ class MyApp extends StatelessWidget {
                         ),
                       ),
                       debugShowCheckedModeBanner: false ,
-                      home: MainPage(),
+                      // home: MainPage(),
+                      initialRoute: '/',
                       routes: Routes.getRoute(),
-                      // onGenerateRoute: (RouteSettings settings ){
-                      //         final List<String> pathElements = settings.name.split('/');
-                      //           if(pathElements[1].contains('detail')){
-                      //             return CustomRoute<bool>(builder:(BuildContext context)=> ProductDetailPage(), settings: settings);
-                      //           }
-                      //          return null;
-                      //     },
                     ) ,
                   );
                     }

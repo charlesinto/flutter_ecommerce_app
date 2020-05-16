@@ -6,6 +6,7 @@ import 'package:flutter_ecommerce_app/src/model/app_advert_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_banks.dart';
 import 'package:flutter_ecommerce_app/src/model/app_cartlist.dart';
 import 'package:flutter_ecommerce_app/src/model/app_order.dart';
+import 'package:flutter_ecommerce_app/src/model/app_paystackBank.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_appstore.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
@@ -15,9 +16,11 @@ import 'package:flutter_ecommerce_app/src/model/app_question.dart';
 import 'package:flutter_ecommerce_app/src/model/app_transaction.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
 import 'package:flutter_ecommerce_app/src/model/app_wallet.dart';
+import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_money_formatter/flutter_money_formatter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './constants.dart';
 import 'package:location/location.dart';
@@ -148,11 +151,11 @@ class App{
         throw Exception('Failed to load categories');
       }
   }
-  static Future<List<ProductCategory>> getProductCategories() async{
+  static Future<List<ProductCategory>> getProductCategories({int start: 0, int stop: 20}) async{
       List<ProductCategory> catgeories = List<ProductCategory>();
       
       try{
-        final response = await http.get(appDomain + '/api/v1/category/get-categories/0/20');
+        final response = await http.get(appDomain + '/api/v1/category/get-categories/$start/$stop');
         if (response.statusCode == 200) {
           var _res = json.decode(response.body);
           List<dynamic> productCatgories = _res['categories'];
@@ -346,7 +349,7 @@ class App{
   static Future<List<Address>> getUserAddress() async{
     try{
       var user = await App.getCurrentUser();
-      var response = await http.get(appDomain + '/api/v1/user/address/get/0/3', headers: {
+      var response = await http.get(appDomain + '/api/v1/user/address/get/0/20', headers: {
         'x-access-token': user.token
       });
       var address = json.decode(response.body)['address'];
@@ -632,6 +635,204 @@ class App{
                 'amount': amount, 'receiver': receiver, 'currency': 'NGN', 'pin': pin
               }, headers: {'x-access-token': user.token});
       return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> deleteBankAcountById(String id) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.delete(appDomain+'/api/v1/user/bank-account/delete/$id', headers: {
+                      'x-access-token': user.token
+                    });
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> deleteAddressById(String id) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.delete(appDomain+'/api/v1/user/address/delete/$id', headers: {
+                      'x-access-token': user.token
+                    });
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static showActionSuccess(BuildContext context, {String message = "Action Performed successfully", Function onConfirm}){
+    return Alert(
+          context: context,
+          type: AlertType.success,
+          title: "Action Successful",
+          desc: message,
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Continue",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+                onConfirm(context);
+              },
+              width: 120,
+            ),
+          ],
+        ).show();
+  }
+  static showActionError(BuildContext context, {String message = "Action could not be performed", Function onConfirm}){
+    return Alert(
+          context: context,
+          type: AlertType.error,
+          title: "Action Error",
+          desc: message,
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Continue",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+                onConfirm(context);
+              },
+              width: 120,
+            ),
+          ],
+        ).show();
+  }
+  static showConfirmDialog(BuildContext context,String title, String message, Function onConfirm, {int parmas}){
+    return Alert(
+          context: context,
+          type: AlertType.info,
+          title: title,
+          desc: message,
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+              },
+              width: 120,
+            ),
+            DialogButton(
+              color: LightColor.red,
+              child: Text(
+                "Continue",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+                onConfirm(parmas);
+              },
+              width: 120,
+            ),
+          ],
+        ).show();
+  }
+  static Future<List<PayStackBank>> getPayStackBanks() async{
+    try{
+      var response = await http.get('https://api.paystack.co/bank');
+      var banks = json.decode(response.body)['data'];
+      List<PayStackBank> pbank = [];
+      print('fetched banks : ${banks.length}');
+      banks.forEach((entry){
+        if((entry['slug'] != null && entry['slug'] != '') && (entry['longcode'] != '' && entry['longcode'] != null) && (entry['code'] != null && entry['code'] != '') && (entry['gateway'] != null && entry['gateway'] != '')){
+          pbank.add(PayStackBank(code: entry['code'] ,country: entry['country'] ,currency: entry['currency'] ,
+          gateway: entry['gateway'] ,id: entry['id'],longcode: entry['longcode'],name: entry['name'],slug:entry['slug'], active: entry['active'] ));
+        }
+      });
+      print(pbank.length);
+      return pbank;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> addBank(PayStackBank bank, String accountName, String acountNumber) async{
+    try{
+      var user = await App.getCurrentUser();
+      // print(user.token);
+      print('long code: '+ bank.longcode);
+      print(bank.name +'>' + bank.code +'>'+ bank.longcode + '>' + bank.active.toString() + '>' + bank.slug);
+      var response = await http.post(appDomain+'/api/v1/user/bank-account/create', body: {
+                                      'name': bank.name,
+                                      'code': bank.code,
+                                      'longcode': bank.longcode,
+                                      'gateway': bank.gateway,
+                                      'active': bank.active.toString(),
+                                      'accountName': accountName,
+                                      'accountNumber': acountNumber,
+                                      'slug': bank.slug
+                                    }, headers: {'x-access-token': user.token});
+      print(json.decode(response.body));
+      return response;
+    }catch(error){
+      print(error);
+      throw error;
+    }
+  }
+  static Future<http.Response> addAddress(String country, String state, String city, String address1, {String address2 = ""}) async{
+      try{
+        var user = await App.getCurrentUser();
+        var response = await http.post(appDomain+'/api/v1/user/address/create', body: {
+                            'country': country,
+                            'state': state,
+                            'city': city,
+                            'address1': address1,
+                            'address2': address2
+                          }, headers: {
+                                                    'x-access-token': user.token
+                                                  });
+        return response;
+      }catch(error){
+        throw error;
+      }
+  }
+  static Future<List<AppProduct>> searchProduct(String searchString, {String brandName="", String model="", int year = 0, int category = 0, int store = 0, String sellingPrice =""
+    ,String costPrice="", int subcategory = 0, bool discounts = true, String finalPrice = ""}) async{
+    try{
+      var response = await http.post(appDomain+'/api/v1/user/search-product', body: {
+                        "name": searchString,
+                        "brandName": brandName,
+                        "model": model,
+                        "year": year.toString(),
+                        "category": category.toString(),
+                        "subCategory": subcategory.toString(),
+                        "store": store.toString(),
+                        "sellingPrice": sellingPrice,
+                        "costPrice": costPrice,
+                        "discounts": discounts.toString(),
+                        "finalPrice": finalPrice
+                      });
+      print('we have a search');
+      List<dynamic> products = json.decode(response.body)['products'];
+      List<AppProduct> _products = [];
+      products.forEach((product) {
+        
+        
+
+        AppProduct appProduct = AppProduct(createdAt: product['createdAt'],
+             id: product['id'], name: product['name'], model: product['model'], description:
+              product['description'], year: product['year'], mainImageUrl: product['mainImageUrl'], sellingPrice:
+               product['sellingPrice'], costPrice: product['costPrice'], discounts: product['discounts'], finalPrice: 
+               product['finalPrice'], deliveryDays: product['deliveryDays'], deliveryLocation: product['deliveryLocation'],
+                deliveryType: product['deliveryType'], rating: product['rating'], blockedReason: product['blockedReason'],
+                 isBlocked: product['isBlocked'], homepage: product['homepage'], homePageUntil: product['homePageUntil'], 
+                 featured: product['featured'], featuredUntil: product['featuredUntil'], owner: null, agent: product['agent'],
+                  adCategory: product['adCategory'], category: null, subCategory: null, store: null,
+              );
+        
+        _products.add(appProduct);
+      });
+      return _products;
     }catch(error){
       throw error;
     }

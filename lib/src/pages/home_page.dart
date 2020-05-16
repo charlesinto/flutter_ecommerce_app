@@ -30,7 +30,15 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  
+    FocusNode _focus = new FocusNode();
+    @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocusChange);
+  }
+  void _onFocusChange(){
+    print("Focus: "+_focus.hasFocus.toString());
+  }
   Widget _icon(IconData icon, {Color color = LightColor.iconColor}) {
     return Container(
       padding: EdgeInsets.all(10),
@@ -150,19 +158,25 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _search() {
+  Widget _search(BuildContext context) {
     return Container(
       margin: AppTheme.padding,
       child: Row(
         children: <Widget>[
           Expanded(
-            child: Container(
+            child: GestureDetector(
+              onTap: () => searchProduct(context),
+              child:  Container(
               height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                   color: LightColor.lightGrey.withAlpha(100),
                   borderRadius: BorderRadius.all(Radius.circular(10))),
-              child: TextField(
+              child: GestureDetector(
+                onTap: () => searchProduct(context),
+                child: TextField(
+                enabled: false,
+                focusNode: _focus,
                 decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: "Search Products",
@@ -171,13 +185,80 @@ class _MyHomePageState extends State<MyHomePage> {
                         EdgeInsets.only(left: 10, right: 10, bottom: 0, top: 5),
                     prefixIcon: Icon(Icons.search, color: Colors.black54)),
               ),
-            ),
+              )
+            )
+            )
           ),
           SizedBox(width: 20),
-          _icon(Icons.filter_list, color: Colors.black54),
+          GestureDetector(
+            onTap: (){
+              loadProductCategory(context);
+            },
+            child: _icon(Icons.filter_list, color: Colors.black54)
+          ),
         ],
       ),
     );
+  }
+
+  loadProductCategory(BuildContext context) async{
+      App.isLoading(context);
+      var categories = await App.getProductCategories(start: 0, stop: 100);
+      App.stopLoading(context);
+      var deviceHeight = MediaQuery.of(context).size.height;
+      var deviceWidth = MediaQuery.of(context).size.width;
+      return showDialog(context: context, 
+        builder: (BuildContext context){
+          return Dialog(
+            child: Container(
+            width: deviceWidth * 0.6,
+            height: deviceHeight * 0.6 > 380 ? 380 : deviceHeight * 0.6 ,
+            padding: EdgeInsets.only(bottom: 16.0, top: 20.0, left: 16.0, right: 16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    child: TitleText(text:'Search By Category')
+                  ),
+                  SizedBox(height: 20.0),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: categories.map((entry){
+                      return ListTile(
+                        onTap: (){
+                          searchByProductCategory(context, entry);
+                        },
+                        leading: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: LightColor.getBackgroundColor(entry.name),
+                          child: Center(child: 
+                            Text(entry.name.substring(0,1).toUpperCase(),
+                              style: TextStyle(color: Colors.white),
+                            )
+                          ),
+                        ),
+                        title: Text(entry.name) ,);
+                    }).toList()
+                  ) 
+                ]
+              ),
+            )
+          ),
+          );
+        }
+      );
+
+  }
+
+  searchByProductCategory(BuildContext context, ProductCategory category){
+      Navigator.pop(context);
+      Navigator.of(context).pushNamed('/search');
+      StoreProvider.of<AppState>(context).dispatch(SearchByCategory(category));
+  }
+
+  searchProduct(BuildContext context){
+    return Navigator.of(context).pushNamed('/search');
   }
 
  Future<AppStateProducts> _initializeApp(BuildContext context) async{
@@ -266,27 +347,39 @@ class _MyHomePageState extends State<MyHomePage> {
           builder: (BuildContext context, AsyncSnapshot<AppStateProducts> snapshot){
             if(snapshot.connectionState == ConnectionState.done){
               if(snapshot.hasData){
-                return StoreConnector<AppState, AppState>(
-                  builder: (BuildContext context, state){
-                      return ListView(
+                      return StoreConnector<AppState, AppState>(
+                        builder: (BuildContext context, state){
+                          return ListView(
                                 physics: ScrollPhysics(), // to disable GridView's scrolling
                                 shrinkWrap: true,
                                 children: <Widget>[
-                                  _search(), _categoryWidget(snapshot.data.categories),
+                                  _search(context),
+                                   _categoryWidget(snapshot.data.categories),
                                    _productWidget(snapshot.data.featuredProducts),
                                    _homeProductWidget(snapshot.data.homeProducts),
                                    _adverCategoryWidgets(snapshot.data.advertCategory)
                                 ]
 
                               );
-                    },
-                   converter: (store) => store.state);
+                        }, converter: (store) => store.state
+                      );
+                    
                    
               }
-              return Container();
+              return Column(
+                  children: [
+                    _search(context),
+                  ]
+                );
             }
-            return Center(
-              child: CircularProgressIndicator()
+            return Column(
+              children: [
+                _search(context),
+                SizedBox(height: 40,),
+                Center(
+                  child: CircularProgressIndicator()
+                )
+              ]
             );
           }
         );

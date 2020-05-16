@@ -249,23 +249,35 @@ class _WalletPageState extends State<WalletPage>{
                             fontWeight: FontWeight.w500,
                           ) ,
                   ),
-                  ListTile(
-                    leading: Icon(Icons.settings, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Settings',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/settings');
+                    },
+                    child: ListTile(
+                      leading: Icon(Icons.settings, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Settings',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
-                  ListTile(
-                    leading: Icon(Icons.call, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Costumer Service',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: (){
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/customerService');
+                    },
+                    child: ListTile(
+                      leading: Icon(Icons.call, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Costumer Service',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   ListTile(
                     leading: Icon(Icons.store, color: LightColor.lightColor),

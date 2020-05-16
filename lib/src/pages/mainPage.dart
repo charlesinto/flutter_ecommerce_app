@@ -435,23 +435,35 @@ class _MainPageState extends State<MainPage> {
                             fontWeight: FontWeight.w500,
                           ) ,
                   ),
-                  ListTile(
-                    leading: Icon(Icons.settings, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Settings',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/settings');
+                    },
+                    child: ListTile(
+                      leading: Icon(Icons.settings, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Settings',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
-                  ListTile(
-                    leading: Icon(Icons.call, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Costumer Service',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: (){
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/customerService');
+                    },
+                    child: ListTile(
+                      leading: Icon(Icons.call, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Costumer Service',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pushReplacementNamed('/wallet'),
@@ -531,7 +543,7 @@ class _MainPageState extends State<MainPage> {
       }
       return _appDrawer(context, null);
     }
-    return Container();
+    return _appDrawer(context, null);
   }
   @override
   Widget build(BuildContext context) {
