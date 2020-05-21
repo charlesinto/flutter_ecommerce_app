@@ -814,11 +814,37 @@ class App{
                       });
       print('we have a search');
       List<dynamic> products = json.decode(response.body)['products'];
+      print(products.length);
       List<AppProduct> _products = [];
       products.forEach((product) {
         
         
 
+        AppProduct appProduct = AppProduct(createdAt: product['createdAt'],
+             id: product['id'], name: product['name'], model: product['model'], description:
+              product['description'], year: product['year'], mainImageUrl: product['mainImageUrl'], sellingPrice:
+               product['sellingPrice'], costPrice: product['costPrice'], discounts: product['discounts'], finalPrice: 
+               product['finalPrice'], deliveryDays: product['deliveryDays'], deliveryLocation: product['deliveryLocation'],
+                deliveryType: product['deliveryType'], rating: product['rating'], blockedReason: product['blockedReason'],
+                 isBlocked: product['isBlocked'], homepage: product['homepage'], homePageUntil: product['homePageUntil'], 
+                 featured: product['featured'], featuredUntil: product['featuredUntil'], owner: null, agent: product['agent'],
+                  adCategory: product['adCategory'], category: null, subCategory: null, store: null,
+              );
+        
+        _products.add(appProduct);
+      });
+      return _products;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<List<AppProduct>> getSellersProduct({int start = 0, int stop = 100}) async{
+    try{
+        var user = await App.getCurrentUser(); 
+        var response = await http.get(appDomain+'/api/v1/seller/product/get-products/0/100', headers: {'x-access-token': user.token});
+        List<dynamic> products = json.decode(response.body)['products'];
+        List<AppProduct> _products = [];
+        products.forEach((product) {
         AppProduct appProduct = AppProduct(createdAt: product['createdAt'],
              id: product['id'], name: product['name'], model: product['model'], description:
               product['description'], year: product['year'], mainImageUrl: product['mainImageUrl'], sellingPrice:

@@ -10,7 +10,10 @@ import 'package:flutter_ecommerce_app/src/themes/theme.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 import 'package:flutter_ecommerce_app/util/app.dart';
 import 'package:flutter_ecommerce_app/util/place.dart';
+import 'package:flutter_redux/flutter_redux.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
+import 'package:flutter_ecommerce_app/src/model/app_state.dart';
+import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 class Settings extends StatefulWidget{
   @override
   State<StatefulWidget> createState() => _SettingsPage();
@@ -123,16 +126,24 @@ class _SettingsPage extends State<Settings>{
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ListTile(
-                    leading: Icon(Icons.home, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Home',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                 GestureDetector(
+                    onTap: () {Navigator.pop(context); Navigator.of(context).pushNamed('/home');},
+                    child: ListTile(
+                      leading: Icon(Icons.home, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Home',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
-                  ListTile(
+                  GestureDetector(
+                    onTap: () {
+                      StoreProvider.of<AppState>(context).dispatch(BottomIconSelected(1));
+                      Navigator.pop(context);
+                    },
+                    child: ListTile(
                     leading: Icon(Icons.history, color: LightColor.lightColor),
                     title: TitleText(
                             color: Colors.black ,
@@ -140,6 +151,7 @@ class _SettingsPage extends State<Settings>{
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
                           ) ,
+                  )
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pushNamed('/wallet'),
@@ -153,14 +165,19 @@ class _SettingsPage extends State<Settings>{
                               ) ,
                       ),
                   ),
-                  ListTile(
-                    leading: Icon(Icons.credit_card, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Azonka Pay',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: (){ 
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/azonkapay');},
+                    child: ListTile(
+                      leading: Icon(Icons.credit_card, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Azonka Pay',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   GestureDetector(
                     onTap: () {
@@ -192,14 +209,17 @@ class _SettingsPage extends State<Settings>{
                             ) ,
                     )
                   ),
-                  ListTile(
-                    leading: Icon(Icons.store, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'My Store',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed('/store'),
+                    child: ListTile(
+                      leading: Icon(Icons.store, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'My Store',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    ),
                   ),
                   GestureDetector(onTap: (){ _signOutUser(context);},
                     child: ListTile(
@@ -955,7 +975,7 @@ class _SettingsPage extends State<Settings>{
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children:[
                   Text(
-                    "Billing Account:",
+                    "My Bank:",
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                   ),
                   IconButton(icon: Icon(Icons.add, color: LightColor.primaryAccent,), onPressed: (){

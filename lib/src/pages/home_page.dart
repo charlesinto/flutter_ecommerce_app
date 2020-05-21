@@ -2,23 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_ecommerce_app/src/model/app_advert_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
+import 'package:flutter_ecommerce_app/src/model/app_searchCategory.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state_products.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
-import 'package:flutter_ecommerce_app/src/model/data.dart';
-import 'package:flutter_ecommerce_app/src/model/product.dart';
 import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/themes/theme.dart';
-import 'package:flutter_ecommerce_app/src/wigets/BottomNavigationBar/bootom_navigation_bar.dart';
 import 'package:flutter_ecommerce_app/src/wigets/prduct_icon.dart';
-import 'package:flutter_ecommerce_app/src/wigets/product_adcart.dart';
 import 'package:flutter_ecommerce_app/src/wigets/product_card.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 import 'package:flutter_ecommerce_app/util/app.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -31,6 +26,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
     FocusNode _focus = new FocusNode();
+    BuildContext appContext;
     @override
   void initState() {
     super.initState();
@@ -53,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _categoryWidget(List<ProductCategory> categories) {
+  Widget _categoryWidget(BuildContext context, List<ProductCategory> categories) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       width: AppTheme.fullWidth(context),
@@ -63,6 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: categories
               .map((category) => ProducIcon(
                     model: category,
+                    context: context
                   ))
                   
               .toList())
@@ -252,9 +249,8 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   searchByProductCategory(BuildContext context, ProductCategory category){
-      Navigator.pop(context);
-      Navigator.of(context).pushNamed('/search');
-      StoreProvider.of<AppState>(context).dispatch(SearchByCategory(category));
+      StoreProvider.of<AppState>(appContext).dispatch(SearchByCategory(SearchProductsByCategory(context: context, category: category)));
+      
   }
 
   searchProduct(BuildContext context){
@@ -342,6 +338,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    appContext = context;
     return FutureBuilder(
           future: _initializeApp(context),
           builder: (BuildContext context, AsyncSnapshot<AppStateProducts> snapshot){
@@ -354,7 +351,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 shrinkWrap: true,
                                 children: <Widget>[
                                   _search(context),
-                                   _categoryWidget(snapshot.data.categories),
+                                  //  _categoryWidget(context, snapshot.data.categories),
                                    _productWidget(snapshot.data.featuredProducts),
                                    _homeProductWidget(snapshot.data.homeProducts),
                                    _adverCategoryWidgets(snapshot.data.advertCategory)

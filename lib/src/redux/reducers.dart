@@ -1,8 +1,10 @@
 
 
+import 'package:flutter/material.dart';
 import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
 import 'package:flutter_ecommerce_app/src/model/app_cartlist.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
+import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state.dart';
 import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/util/app.dart';
@@ -103,16 +105,54 @@ AppState reducer(AppState prevState, dynamic action) {
     newState.userCart = Cart(products: []);
   }
   if(action is SearchProduct){
-    // newState.searchString = action.payload;             
-     App.searchProduct(newState.searchString).then((product){
-       newState.searchResult = product;
-     });
+      searchProduct(newState.searchString, action.payload).then((products){
+        newState.searchResult = products;
+        newState.searchComplete = true;
+      }).catchError((error){
+        App.showActionError(action.payload,message: 'Some error were encountred');
+        print('errors: '+ error);
+      });
   }
   if(action is SearchByCategory){
-    newState.searchCategory = action.payload;
+    newState.searchString = 'Search for: ${action.payload.category.name}';
+    searchByCategory("", action.payload.context, action.payload.category).then((products){
+      newState.searchResult = products;
+      newState.searchComplete = true;
+      Navigator.pop(action.payload.context);
+      Navigator.of(action.payload.context).pushNamed('/search');
+    }).catchError((error){
+      App.showActionError(action.payload.context,message: 'Some errors were encountred');
+        print(error);
+    });
   }
   if(action is SearchStringChange){
     newState.searchString = action.payload;
+    newState.searchComplete = false;
   }
   return newState;
 }
+
+Future<List<AppProduct>> searchProduct(String search, BuildContext context) async{
+  try{
+    App.isLoading(context);
+    var products = await App.searchProduct(search);
+    App.stopLoading(context);
+    return products;
+  }catch(error){
+    throw error;
+  }
+}
+
+Future<List<AppProduct>> searchByCategory(String search, BuildContext context, ProductCategory category) async{
+  try{
+    print(category.id);
+    print(category.name);
+    App.isLoading(context);
+    var products = await App.searchProduct("", category: category.id );
+    App.stopLoading(context);
+    return products;
+  }catch(error){
+    throw error;
+  }
+}
+

@@ -236,7 +236,7 @@ class _LoginPageState extends State<LoginPage>{
 
       App.stopLoading(context);
       // print(user.emailVerified.toString());
-      Navigator.of(context).pushReplacementNamed('/home');
+      Navigator.of(context).pushReplacementNamed('/advert');
 
     }catch(error){
       App.stopLoading(context);

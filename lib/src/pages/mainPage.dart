@@ -20,6 +20,7 @@ import 'package:flutter_ecommerce_app/util/app.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:badges/badges.dart';
+import './notifications.dart';
 
 class MainPage extends StatefulWidget {
   MainPage({Key key, this.title}) : super(key: key);
@@ -142,7 +143,7 @@ class _MainPageState extends State<MainPage> {
                 )
           ]
         );
-      case 2:
+      case 3:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -158,7 +159,7 @@ class _MainPageState extends State<MainPage> {
                 )
           ]
         );
-      case 3:
+      case 2:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -168,7 +169,7 @@ class _MainPageState extends State<MainPage> {
                   fontWeight: FontWeight.w400,
                 ),
                 TitleText(
-                  text: 'Profile',
+                  text: 'Notifications',
                   fontSize: 27,
                   fontWeight: FontWeight.w700,
               )
@@ -314,13 +315,13 @@ class _MainPageState extends State<MainPage> {
         return MyHomePage();
       case 1: 
         return OrderPage();
-      case 2:
+      case 3:
         return Align(
                 alignment: Alignment.topCenter,
                 child:ShopingCartPage(),
               );
-      case 3:
-        return MyHomePage();
+      case 2:
+        return Notifications();
       default:
         return Container();
     }
@@ -391,14 +392,17 @@ class _MainPageState extends State<MainPage> {
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ListTile(
-                    leading: Icon(Icons.home, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Home',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () {Navigator.pop(context); },
+                    child: ListTile(
+                      leading: Icon(Icons.home, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Home',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   GestureDetector(
                     onTap: () {
@@ -425,15 +429,20 @@ class _MainPageState extends State<MainPage> {
                               fontWeight: FontWeight.w500,
                             ) ,
                     ),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.credit_card, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Azonka Pay',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  ),// /azonkapay
+                  GestureDetector(
+                    onTap: (){ 
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/azonkapay');},
+                    child: ListTile(
+                      leading: Icon(Icons.credit_card, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Azonka Pay',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   GestureDetector(
                     onTap: () {
@@ -466,7 +475,7 @@ class _MainPageState extends State<MainPage> {
                     )
                   ),
                   GestureDetector(
-                    onTap: () => Navigator.of(context).pushReplacementNamed('/wallet'),
+                    onTap: () => Navigator.of(context).pushNamed('/store'),
                     child: ListTile(
                       leading: Icon(Icons.store, color: LightColor.lightColor),
                       title: TitleText(

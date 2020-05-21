@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state.dart';
-import 'package:flutter_ecommerce_app/src/model/data.dart';
-import 'package:flutter_ecommerce_app/src/model/product.dart';
 import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
-import 'package:flutter_ecommerce_app/src/themes/theme.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 import 'package:flutter_ecommerce_app/util/app.dart';
 import 'package:flutter_redux/flutter_redux.dart';
@@ -33,24 +29,10 @@ class _ProductCardSearchState extends State<ProductCardSearch> {
   Widget build(BuildContext context) {
     return StoreConnector<AppState, AppState>(
       builder: (BuildContext context, state){
-        print('final proice: '+model.finalPrice.toString());
-        print('final name: '+model.name.toString());
         return InkWell(
                 onTap: () {
                   StoreProvider.of<AppState>(context).dispatch(ItemSelectedProductCard(model));
                   Navigator.of(context).pushNamed('/detail');
-                  setState(() {
-                    // model.isSelected = !model.isSelected;
-                  //   AppData.productList.forEach((x) {
-                  //     if (x.id == model.id && x.name == model.name) {
-                  //       return;
-                  //     }
-                  //     x.isSelected = false;
-                  //   });
-                  //   var m = AppData.productList
-                  //       .firstWhere((x) => x.id == model.id && x.name == model.name);
-                  //   m.isSelected = !m.isSelected;
-                  });
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -61,7 +43,6 @@ class _ProductCardSearchState extends State<ProductCardSearch> {
                           color: Color(0xfff8f8f8), blurRadius: 15, spreadRadius: 10),
                     ],
                   ),
-                  margin: EdgeInsets.symmetric(vertical: !model.isSelected ? 20 : 0),
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   child: Stack(
                     alignment: Alignment.center,
@@ -96,11 +77,8 @@ class _ProductCardSearchState extends State<ProductCardSearch> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: <Widget>[
-                            TitleText(
-                                // text: model.price.toString(),
-                                text: 'NGN ',
-                                fontSize: 14,
-                                color: LightColor.red,
+                            Text( 'NGN ',
+                                style: TextStyle(color: LightColor.red, fontSize: 12),
                               ),
                             TitleText(
                                 // text: model.price.toString(),

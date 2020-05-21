@@ -46,7 +46,7 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
   double _indexToPosition(int index) {
     // Calculate button positions based off of their
     // index (works with `MainAxisAlignment.spaceAround`)
-    const buttonCount = 4.0;
+    const buttonCount = 3.0;
     final appWidth = MediaQuery.of(context).size.width;
     final buttonsWidth = _getButtonContainerWidth();
     final startX = (appWidth - buttonsWidth) / 2;
@@ -170,8 +170,8 @@ class _CustomBottomNavigationBarState extends State<CustomBottomNavigationBar>
                       children: <Widget>[
                         _icon(Icons.home,context, state.bottomIconIndex == 0, 0),
                         _icon(Icons.history,context, state.bottomIconIndex == 1, 1),
-                        _icon(Icons.shopping_cart,context, state.bottomIconIndex == 2, 2),
-                        // _icon(Icons.favorite_border,context, state.bottomIconIndex== 3, 3),
+                        _icon(Icons.notifications_active,context, state.bottomIconIndex == 2, 2),
+                        // _icon(Icons.shopping_cart,context, state.bottomIconIndex== 3, 3),
                       ],
                     ),
                   ),

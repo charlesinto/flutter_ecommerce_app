@@ -115,7 +115,7 @@ class MyApp extends StatelessWidget {
                         ),
                       ),
                       debugShowCheckedModeBanner: false ,
-                      // home: MainPage(),
+                      home: MainPage(),
                       initialRoute: '/',
                       routes: Routes.getRoute(),
                     ) ,
@@ -158,7 +158,7 @@ class MyApp extends StatelessWidget {
                                   body:  Container(
                                       color: Colors.white,
                                       child: Center(
-                                        child: Image.asset('assets/logo.png',
+                                        child: Image.asset('assets/logoBlack.png',
                                                     fit: BoxFit.contain,
                                                     height: 400.0,
                                                     width: 400.0,
@@ -197,7 +197,7 @@ class MyApp extends StatelessWidget {
                   body:  Container(
                       color: Colors.white,
                       child: Center(
-                        child: Image.asset('assets/logo.png',
+                        child: Image.asset('assets/logoBlack.png',
                                     fit: BoxFit.contain,
                                     height: 400.0,
                                     width: 400.0,

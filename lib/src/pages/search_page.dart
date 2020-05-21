@@ -1,14 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
-import 'package:flutter_ecommerce_app/src/model/app_product.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state.dart';
 import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/themes/theme.dart';
-import 'package:flutter_ecommerce_app/src/wigets/product_adcart.dart';
-import 'package:flutter_ecommerce_app/src/wigets/product_card.dart';
 import 'package:flutter_ecommerce_app/src/wigets/product_search.dart';
-import 'package:flutter_ecommerce_app/util/app.dart';
+import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 import 'package:flutter_redux/flutter_redux.dart';
 
 class SearchPage extends StatefulWidget{
@@ -17,11 +16,20 @@ class SearchPage extends StatefulWidget{
 }
 
 class _SearchPage extends State<SearchPage>{
-  
-  String _searchString = "";
+  @override
+  void initState() {
+    super.initState();
+    _searchState();
+    SchedulerBinding.instance.addPostFrameCallback((_){
+      _searchQuery.text = appState.searchString;
+    });
+  }
+  BuildContext appContext;
   bool isSearched = false;
-  List<AppProduct> _products = [];
-  Widget _appBar(BuildContext context) {
+  AppState appState;
+  final TextEditingController _searchQuery = TextEditingController();
+  Timer debounceTimer;
+  Widget _appBar(BuildContext context,AppState state) {
     return Container(
       padding: AppTheme.padding,
       child: Row(
@@ -36,38 +44,28 @@ class _SearchPage extends State<SearchPage>{
           ),
           Expanded(
             flex: 1,
-            child: searchEntryField() ,),
+            child: searchEntryField(state) ,),
             SizedBox(width: 8.0,),
             GestureDetector(
               onTap: (){
-                searchValue(context);
+                searchValue(context, state);
               },
               child: Text('Search'),)
         ],
       ),
     );
   }
-  searchValue(BuildContext context) async{
+  searchValue(BuildContext context, AppState state) async{
     try{
       setState(() {
         isSearched =  false;
       });
-      App.isLoading(context);
-    List<AppProduct> products = await App.searchProduct(_searchString);
-    // await StoreProvider.of<AppState>(context).dispatch(SearchProduct());
-    print(products.length);
-    App.stopLoading(context);
-    
-    setState(() {
-      _products = products;
-      isSearched = true;
-    });
+    StoreProvider.of<AppState>(context).dispatch(SearchProduct(context));
     }catch(error){
-      App.stopLoading(context);
-      print('search error: '+ error.toString());
+      print('search error: '+ error);
     }
   }
-  Widget searchEntryField(){
+  Widget searchEntryField(AppState state){
     return Container(
               height: 40,
               alignment: Alignment.center,
@@ -75,22 +73,10 @@ class _SearchPage extends State<SearchPage>{
                   color: LightColor.lightGrey.withAlpha(100),
                   borderRadius: BorderRadius.all(Radius.circular(10))),
               child: TextField(
-                onSubmitted: (value){
-                  setState(() {
-                    _searchString = value;
-                  });
-                  // StoreProvider.of<AppState>(context).dispatch(SearchStringChange(value));
-                  searchValue(context);
-                },
+                controller:  _searchQuery,
                 autofocus: true,
                 textInputAction: TextInputAction.search,
                 autocorrect: false,
-                onChanged: (value){
-                  setState(() {
-                    _searchString = value;
-                  });
-                  // StoreProvider.of<AppState>(context).dispatch(SearchStringChange(value));
-                },
                 decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: "Search Products",
@@ -106,8 +92,6 @@ class _SearchPage extends State<SearchPage>{
       padding: EdgeInsets.all(10),
       decoration: BoxDecoration(
           borderRadius: BorderRadius.all(Radius.circular(13)),
-          // color: Theme.of(context).backgroundColor,
-          // boxShadow: AppTheme.shadow
         ),
       child: Icon(
         icon,
@@ -115,27 +99,46 @@ class _SearchPage extends State<SearchPage>{
       ),
     );
   }
+  _searchState() {
+    _searchQuery.addListener(() {
+      if (debounceTimer != null) {
+        debounceTimer.cancel();
+      }
+      debounceTimer = Timer(Duration(milliseconds: 800), () {
+        if (this.mounted) {
+          performSearch(_searchQuery.text);
+        }
+      });
+    });
+  }
+  void performSearch(String query) async {
+    if (query.isEmpty) {
+      return;
+    }
+    print(query);
+    if(this.mounted && appState.searchString != query){
+      StoreProvider.of<AppState>(appContext).dispatch(SearchStringChange(query));
+      StoreProvider.of<AppState>(appContext).dispatch(SearchProduct(context));
+    }
+    
+    
+  }
+
   Widget _renderProducts(BuildContext context, AppState state){
-    // print(_products[0].name);
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       width: AppTheme.fullWidth(context),
       height: AppTheme.fullWidth(context),
+      padding: EdgeInsets.only(bottom: 140.0),
       child: GridView(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 2 / 3,
+                        childAspectRatio: 2/3,
                         mainAxisSpacing: 10,
                         crossAxisSpacing: 20), 
                     scrollDirection: Axis.vertical,
-                    // children: AppData.productList
-                    //     .map((product) => ProductCard(
-                    //           product: product,
-                    //         ))
-                    //     .toList()),
 
-                    children: _products.map((product){
-                      print(product.name);
+                    children: state.searchResult.map((product){
                       return ProductCardSearch(
                               product: product,
                             );
@@ -144,26 +147,113 @@ class _SearchPage extends State<SearchPage>{
     );
               
   }
+  renderSearchState(BuildContext context, AppState state){
+    if(state.searchComplete){
+      if(state.searchResult.length > 0)
+        return _renderProducts(context, state);
+      return Container(child: Center(child: Text('No Product(s) found'),));
+    }
+    return Container();
+  }
+  Widget _renderSearchResult(BuildContext context, AppState state){
+    if(state.searchComplete){
+      if(state.searchResult.length > 0){
+        
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                      child: TitleText(text: 'Searching for'),
+                    ),
+                    Container(
+                      child: Text('Found(${state.searchResult.length})', 
+                      style: TextStyle(color: LightColor.red, fontSize: 12),)
+                    )
+                ]
+              ),
+              SizedBox(height: 4),
+              _renderSearchSuggestion(state)
+            ],)
+        );
+      }
+      return Container(
+          padding: EdgeInsets.symmetric(horizontal: 16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                      child: TitleText(text: 'Searching for'),
+                    ),
+                    Container(
+                      child: Text('Found(${state.searchResult.length})', 
+                      style: TextStyle(color: LightColor.red, fontSize: 12),)
+                    )
+                ]
+              ),
+              SizedBox(height: 4),
+              _renderSearchSuggestion(state)
+            ],)
+        );
+    }
+    return Container();
+  }
+  Widget _renderSearchSuggestion(AppState state){
+    if(state.searchString.startsWith('Search for:')){
+      var category = state.searchString.split(':')[1];
+      return Container(
+                child: Text(
+                  '$category > All Products'
+                ),
+              );
+    }
+    return Container(
+                child: Text(
+                  'All Categories > ${state.searchString}'
+                ),
+              );
+  }
   @override
   Widget build(BuildContext context) {
+    appContext = context;
     return StoreConnector<AppState, AppState>(
       builder: (BuildContext context, state){
+        appState = state;
         return Scaffold(
           body: SafeArea(
             child: GestureDetector(
               onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
               child: Container(
-              padding: EdgeInsets.only(bottom: 60.0),  
-              child: SingleChildScrollView(
-                child: Column(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _appBar(context),
-                    SizedBox(height: 40.0),
-                     _renderProducts(context, state),
+                    _appBar(context, state),
+                    SizedBox(height: 10.0),
+                    _renderSearchResult(context, state),
+                    Expanded(
+                      child:  SingleChildScrollView(
+                          child: Column(
+                            children:[ 
+                              Container(
+                                      height: AppTheme.fullHeight(context) - 20,
+                                      margin: EdgeInsets.only(bottom: 120),
+                                      child: renderSearchState(context, state)
+                                ),
+                              
+                            ]
+                          )
+                      )
+                   )
                     
                   ]
                 )
-              ),
             )
             )
             ,)

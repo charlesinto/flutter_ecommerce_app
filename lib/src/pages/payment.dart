@@ -110,16 +110,24 @@ class _PaymentState extends State<Payment>{
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ListTile(
-                    leading: Icon(Icons.home, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Home',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () {Navigator.pop(context); Navigator.of(context).pushNamed('/home');},
+                    child: ListTile(
+                      leading: Icon(Icons.home, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Home',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
-                  ListTile(
+                  GestureDetector(
+                    onTap: () {
+                      StoreProvider.of<AppState>(context).dispatch(BottomIconSelected(1));
+                      Navigator.pop(context);
+                    },
+                    child: ListTile(
                     leading: Icon(Icons.history, color: LightColor.lightColor),
                     title: TitleText(
                             color: Colors.black ,
@@ -127,6 +135,7 @@ class _PaymentState extends State<Payment>{
                             fontSize: 18,
                             fontWeight: FontWeight.w500,
                           ) ,
+                  )
                   ),
                   GestureDetector(
                     onTap: () => Navigator.of(context).pushNamed('/wallet'),
@@ -140,14 +149,19 @@ class _PaymentState extends State<Payment>{
                               ) ,
                       ),
                   ),
-                  ListTile(
-                    leading: Icon(Icons.credit_card, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Azonka Pay',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: (){ 
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/azonkapay');},
+                    child: ListTile(
+                      leading: Icon(Icons.credit_card, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Azonka Pay',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   GestureDetector(
                     onTap: () {
@@ -179,14 +193,17 @@ class _PaymentState extends State<Payment>{
                               ) ,
                       )
                     ),
-                  ListTile(
-                    leading: Icon(Icons.store, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'My Store',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed('/store'),
+                    child: ListTile(
+                      leading: Icon(Icons.store, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'My Store',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    ),
                   ),
                   GestureDetector(onTap: (){ _signOutUser(context);},
                     child: ListTile(
@@ -879,7 +896,7 @@ class _PaymentState extends State<Payment>{
       platform = 'Android';
     }
 
-    return 'ChargedFrom${platform}_${DateTime.now().millisecondsSinceEpoch}';
+    return '${platform}_${DateTime.now().millisecondsSinceEpoch}';
   }
 
   Widget _addressEntryField() {

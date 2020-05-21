@@ -19,7 +19,7 @@ import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state.dart';
 import 'package:flutter_paystack/flutter_paystack.dart';
-
+import '../model/app_transaction.dart' as WalletTransaction;
 class WalletPage extends StatefulWidget{
   @override
   _WalletPageState createState() => _WalletPageState();
@@ -202,14 +202,17 @@ class _WalletPageState extends State<WalletPage>{
               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ListTile(
-                    leading: Icon(Icons.home, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Home',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () {Navigator.pop(context); Navigator.of(context).pushNamed('/home');},
+                    child: ListTile(
+                      leading: Icon(Icons.home, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Home',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   GestureDetector(
                     onTap: () {
@@ -240,14 +243,19 @@ class _WalletPageState extends State<WalletPage>{
                               ) ,
                       ),
                   ),
-                  ListTile(
-                    leading: Icon(Icons.credit_card, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'Azonka Pay',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: (){ 
+                      Navigator.pop(context);
+                      Navigator.of(context).pushNamed('/azonkapay');},
+                    child: ListTile(
+                      leading: Icon(Icons.credit_card, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'Azonka Pay',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    )
                   ),
                   GestureDetector(
                     onTap: () {
@@ -279,14 +287,17 @@ class _WalletPageState extends State<WalletPage>{
                             ) ,
                     )
                   ),
-                  ListTile(
-                    leading: Icon(Icons.store, color: LightColor.lightColor),
-                    title: TitleText(
-                            color: Colors.black ,
-                            text: 'My Store',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
-                          ) ,
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pushNamed('/store'),
+                    child: ListTile(
+                      leading: Icon(Icons.store, color: LightColor.lightColor),
+                      title: TitleText(
+                              color: Colors.black ,
+                              text: 'My Store',
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ) ,
+                    ),
                   ),
                   GestureDetector(onTap: (){ },
                     child: ListTile(
@@ -1065,10 +1076,62 @@ class _WalletPageState extends State<WalletPage>{
     // print(date);
     return date.toString();
   }
+  viewWalletDetails(BuildContext context, WalletTransaction.Transaction _transcation){
+    return showDialog(context: context,
+       builder: (BuildContext context){
+         return AlertDialog(
+           content: Container(
+             width: AppTheme.fullWidth(context),
+             
+             padding: EdgeInsets.symmetric(vertical: 8,),
+             child: SingleChildScrollView(
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                    TitleText(text: 'Wallet Transaction Details', fontSize: 18),
+                    SizedBox(height: 10.0),
+                     _transcation.transactionReference != null && _transcation.transactionReference.isNotEmpty ? Row(children: <Widget>[
+                      TitleText(text: 'Transaction Reference: ', fontSize: 10),
+                      SizedBox(width: 8),
+                      Text(_transcation.transactionReference, style: TextStyle(fontSize: 12))
+                    ],) : Container(),
+                    SizedBox(height: 8.0),
+                    Row(children: <Widget>[
+                      TitleText(text: 'Transaction Type: ',fontSize: 10),
+                      SizedBox(width: 8),
+                      Text(_transcation.type.toUpperCase(), style: TextStyle(fontSize: 12))
+                    ],),
+                    SizedBox(height: 8.0),
+                    Row(children: <Widget>[
+                      TitleText(text: 'Transaction Amount: ',fontSize: 10),
+                      SizedBox(width: 8),
+                      Text('NGN ', style: TextStyle(color: LightColor.red, fontSize: 12)),
+                      Text(App.formatAsMoney(_transcation.amount ~/ 100), style: TextStyle(fontSize: 12))
+                    ],),
+                    SizedBox(height: 8.0),
+                    Row(children: <Widget>[
+                      TitleText(text: 'Transaction Date: ',fontSize: 10),
+                      SizedBox(width: 8),
+                      Text(getOrderDate(_transcation.createdAt), style: TextStyle(fontSize: 12) ),
+                    ],),
+                    SizedBox(height: 8.0),
+                 ]
+               ),)
+           ),
+            actions: <Widget>[
+              RaisedButton(onPressed: (){ Navigator.pop(context);}, child: Text('Close', style: TextStyle(color: Colors.white),), color: LightColor.orange)
+            ],
+         );
+       } );
+  }
   Widget _renderUserHistory(Wallet wallet){
-    return Column(children: wallet.transactions.map(( _transaction){
+    return Column(children: wallet.transactions.map(( WalletTransaction.Transaction _transaction){
                 // print(json.encode(_transaction));
-                return Container(
+                return GestureDetector(
+                  onTap: (){
+                    viewWalletDetails(context, _transaction);
+                  },
+                  child: Container(
                   
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1083,7 +1146,7 @@ class _WalletPageState extends State<WalletPage>{
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                     TitleText(
-                                      text: _transaction.type.toUpperCase(),
+                                      text: _transaction.type == 'deposit'  ? 'CREDIT' : 'DEBIT',
                                     ),
                                     SizedBox(height: 6.0),
                                     Text(getOrderDate(_transaction.createdAt),
@@ -1111,6 +1174,7 @@ class _WalletPageState extends State<WalletPage>{
                       ],
                       
                   )
+                )
                 );
             }).toList(),
     );

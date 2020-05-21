@@ -18,6 +18,7 @@ class AppState{
   List<int> modifiedCartItems = [];
   ProductCategory searchCategory;
   String searchString = "";
+  bool searchComplete = false;
   AppState({@required this.selectedTabIndex, this.appStateProducts});
   User user;
   List<AppProduct> searchResult = [];
@@ -33,5 +34,6 @@ class AppState{
     searchCategory = anotherState.searchCategory;
     searchString = anotherState.searchString;
     searchResult = anotherState.searchResult;
+    searchComplete = anotherState.searchComplete;
   }
 }

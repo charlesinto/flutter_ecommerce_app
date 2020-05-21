@@ -95,11 +95,18 @@ class _ProductCardState extends State<ProductCard> {
                             fontSize: model.isSelected ? 14 : 12,
                             color: LightColor.orange,
                           ),
-                          TitleText(
-                            // text: model.price.toString(),
-                            text: App.formatAsMoney(model.finalPrice),
-                            fontSize: model.isSelected ? 18 : 16,
-                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: <Widget>[
+                            Text( 'NGN ',
+                                style: TextStyle(color: LightColor.red, fontSize: 12),
+                              ),
+                            TitleText(
+                                // text: model.price.toString(),
+                                text: App.formatAsMoney(model.finalPrice),
+                                fontSize: model.isSelected ? 18 : 16,
+                              )
+                          ],),
                         ],
                       ),
                       Positioned(
