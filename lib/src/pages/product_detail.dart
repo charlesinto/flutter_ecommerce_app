@@ -141,7 +141,7 @@ class _ProductDetailPageState extends State<ProductDetailPage>
             DialogButton(
               color: Colors.white,
               child: Text(
-                "Go to cart",
+                "Buy Now",
                 style: TextStyle(color: Colors.orange, fontSize: 20),
               ),
               onPressed: () {
