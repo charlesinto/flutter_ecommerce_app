@@ -38,6 +38,7 @@ class AppProduct{
   bool isSelected = false;
   bool isLiked = false;
   int orderNumber = 0;
+  String orderStatus = "";
   final int orderId;
   final int adCategory;
   final ProductCategory category;
@@ -50,7 +51,7 @@ class AppProduct{
     @required this.costPrice, @required this.discounts, @required this.finalPrice,@required this.deliveryDays,
      @required this.deliveryLocation,@required this.deliveryType, @required this.rating,@required this.blockedReason,@required this.isBlocked,@required this.homepage,
      @required this.homePageUntil,@required this.featured,@required this.featuredUntil,@required this.owner,@required this.agent,@required this.adCategory,@required this.category,@required this.subCategory,
-    @required this.store, this.orderNumber, this.orderId});
+    @required this.store, this.orderNumber, this.orderId, this.orderStatus});
 
   Map toJson(){
     return {'id': id, 'finalPrice': finalPrice, 'name': name,

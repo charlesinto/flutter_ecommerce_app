@@ -2,23 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_ecommerce_app/src/model/app_advert_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
+import 'package:flutter_ecommerce_app/src/model/app_searchCategory.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state.dart';
 import 'package:flutter_ecommerce_app/src/model/app_state_products.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
-import 'package:flutter_ecommerce_app/src/model/data.dart';
-import 'package:flutter_ecommerce_app/src/model/product.dart';
 import 'package:flutter_ecommerce_app/src/redux/actions.dart';
 import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_ecommerce_app/src/themes/theme.dart';
-import 'package:flutter_ecommerce_app/src/wigets/BottomNavigationBar/bootom_navigation_bar.dart';
 import 'package:flutter_ecommerce_app/src/wigets/prduct_icon.dart';
-import 'package:flutter_ecommerce_app/src/wigets/product_adcart.dart';
 import 'package:flutter_ecommerce_app/src/wigets/product_card.dart';
 import 'package:flutter_ecommerce_app/src/wigets/title_text.dart';
 import 'package:flutter_ecommerce_app/util/app.dart';
 import 'package:flutter_redux/flutter_redux.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -30,7 +25,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  
+    FocusNode _focus = new FocusNode();
+    BuildContext appContext;
+    @override
+  void initState() {
+    super.initState();
+    _focus.addListener(_onFocusChange);
+  }
+  void _onFocusChange(){
+    print("Focus: "+_focus.hasFocus.toString());
+  }
   Widget _icon(IconData icon, {Color color = LightColor.iconColor}) {
     return Container(
       padding: EdgeInsets.all(10),
@@ -45,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _categoryWidget(List<ProductCategory> categories) {
+  Widget _categoryWidget(BuildContext context, List<ProductCategory> categories) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       width: AppTheme.fullWidth(context),
@@ -55,6 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
           children: categories
               .map((category) => ProducIcon(
                     model: category,
+                    context: context
                   ))
                   
               .toList())
@@ -127,21 +132,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 
                 margin: EdgeInsets.symmetric(vertical: 10),
                 width: AppTheme.fullWidth(context),
-                height: AppTheme.fullWidth(context) * 1,
-                child: GridView.count(
-                    // primary: false,
-                    crossAxisSpacing: 10,
-                    // mainAxisSpacing: 10,
-                    childAspectRatio: 1 / 2,
-                    crossAxisCount: 2,
-                    // gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    //     crossAxisCount: 2, 
-                    //     childAspectRatio: 1 / 2,
-                    //     // mainAxisSpacing: 30,
-                    //     crossAxisSpacing: 20
-                    //     ), 
-                    padding: EdgeInsets.only(left: 20, right: 20.0),
-                    scrollDirection: Axis.vertical,
+                height: AppTheme.fullWidth(context) * .7,
+                child: GridView(
+                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 1,
+                        childAspectRatio: 4 / 3,
+                        mainAxisSpacing: 30,
+                        crossAxisSpacing: 20), 
+                    padding: EdgeInsets.only(left: 20),
+                    scrollDirection: Axis.horizontal,
                     // children: AppData.productList
                     //     .map((product) => ProductCard(
                     //           product: product,
@@ -156,19 +155,25 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget _search() {
+  Widget _search(BuildContext context) {
     return Container(
       margin: AppTheme.padding,
       child: Row(
         children: <Widget>[
           Expanded(
-            child: Container(
+            child: GestureDetector(
+              onTap: () => searchProduct(context),
+              child:  Container(
               height: 40,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                   color: LightColor.lightGrey.withAlpha(100),
                   borderRadius: BorderRadius.all(Radius.circular(10))),
-              child: TextField(
+              child: GestureDetector(
+                onTap: () => searchProduct(context),
+                child: TextField(
+                enabled: false,
+                focusNode: _focus,
                 decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: "Search Products",
@@ -177,13 +182,79 @@ class _MyHomePageState extends State<MyHomePage> {
                         EdgeInsets.only(left: 10, right: 10, bottom: 0, top: 5),
                     prefixIcon: Icon(Icons.search, color: Colors.black54)),
               ),
-            ),
+              )
+            )
+            )
           ),
           SizedBox(width: 20),
-          _icon(Icons.filter_list, color: Colors.black54),
+          GestureDetector(
+            onTap: (){
+              loadProductCategory(context);
+            },
+            child: _icon(Icons.filter_list, color: Colors.black54)
+          ),
         ],
       ),
     );
+  }
+
+  loadProductCategory(BuildContext context) async{
+      App.isLoading(context);
+      var categories = await App.getProductCategories(start: 0, stop: 100);
+      App.stopLoading(context);
+      var deviceHeight = MediaQuery.of(context).size.height;
+      var deviceWidth = MediaQuery.of(context).size.width;
+      return showDialog(context: context, 
+        builder: (BuildContext context){
+          return Dialog(
+            child: Container(
+            width: deviceWidth * 0.6,
+            height: deviceHeight * 0.6 > 380 ? 380 : deviceHeight * 0.6 ,
+            padding: EdgeInsets.only(bottom: 16.0, top: 20.0, left: 16.0, right: 16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    child: TitleText(text:'Search By Category')
+                  ),
+                  SizedBox(height: 20.0),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: categories.map((entry){
+                      return ListTile(
+                        onTap: (){
+                          searchByProductCategory(context, entry);
+                        },
+                        leading: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: LightColor.getBackgroundColor(entry.name),
+                          child: Center(child: 
+                            Text(entry.name.substring(0,1).toUpperCase(),
+                              style: TextStyle(color: Colors.white),
+                            )
+                          ),
+                        ),
+                        title: Text(entry.name) ,);
+                    }).toList()
+                  ) 
+                ]
+              ),
+            )
+          ),
+          );
+        }
+      );
+
+  }
+
+  searchByProductCategory(BuildContext context, ProductCategory category){
+      StoreProvider.of<AppState>(appContext).dispatch(SearchByCategory(SearchProductsByCategory(context: context, category: category)));
+      
+  }
+
+  searchProduct(BuildContext context){
+    return Navigator.of(context).pushNamed('/search');
   }
 
  Future<AppStateProducts> _initializeApp(BuildContext context) async{
@@ -210,6 +281,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _advertWidget(AdvertProduct advert){
       // print(advert.name);
+      print('name: ' + advert.name + ' lenght: '+ advert.productAd.length.toString());
+      if(advert.productAd.length <= 0){
+        return Container();
+      }
       return Container(
       padding: EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -227,7 +302,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 
                 margin: EdgeInsets.symmetric(vertical: 10),
                 width: AppTheme.fullWidth(context),
-                height: AppTheme.fullWidth(context) * 1,
+                height: AppTheme.fullWidth(context) * .7,
                 child: GridView(
                     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
@@ -235,7 +310,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         mainAxisSpacing: 20,
                         crossAxisSpacing: 20), 
                     padding: EdgeInsets.only(left: 20),
-                    scrollDirection: Axis.vertical,
+                    scrollDirection: Axis.horizontal,
                     // children: AppData.productList
                     //     .map((product) => ProductCard(
                     //           product: product,
@@ -251,6 +326,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget _adverCategoryWidgets(List<AdvertProduct> adverts){
+    
     return Container(
       child: Column(
         children: adverts.map((advert) {
@@ -262,32 +338,45 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    appContext = context;
     return FutureBuilder(
           future: _initializeApp(context),
           builder: (BuildContext context, AsyncSnapshot<AppStateProducts> snapshot){
             if(snapshot.connectionState == ConnectionState.done){
               if(snapshot.hasData){
-                return StoreConnector<AppState, AppState>(
-                  builder: (BuildContext context, state){
-                      return ListView(
+                      return StoreConnector<AppState, AppState>(
+                        builder: (BuildContext context, state){
+                          return ListView(
                                 physics: ScrollPhysics(), // to disable GridView's scrolling
                                 shrinkWrap: true,
                                 children: <Widget>[
-                                  _search(), _categoryWidget(snapshot.data.categories),
+                                  _search(context),
+                                  //  _categoryWidget(context, snapshot.data.categories),
                                    _productWidget(snapshot.data.featuredProducts),
                                    _homeProductWidget(snapshot.data.homeProducts),
                                    _adverCategoryWidgets(snapshot.data.advertCategory)
                                 ]
 
                               );
-                    },
-                   converter: (store) => store.state);
+                        }, converter: (store) => store.state
+                      );
+                    
                    
               }
-              return Container();
+              return Column(
+                  children: [
+                    _search(context),
+                  ]
+                );
             }
-            return Center(
-              child: CircularProgressIndicator()
+            return Column(
+              children: [
+                _search(context),
+                SizedBox(height: 40,),
+                Center(
+                  child: CircularProgressIndicator()
+                )
+              ]
             );
           }
         );

@@ -3,18 +3,28 @@ import 'dart:convert';
 import 'package:flutter_ecommerce_app/src/model/app_adProduct.dart';
 import 'package:flutter_ecommerce_app/src/model/app_address.dart';
 import 'package:flutter_ecommerce_app/src/model/app_advert_product.dart';
+import 'package:flutter_ecommerce_app/src/model/app_banks.dart';
 import 'package:flutter_ecommerce_app/src/model/app_cartlist.dart';
+import 'package:flutter_ecommerce_app/src/model/app_order.dart';
+import 'package:flutter_ecommerce_app/src/model/app_paystackBank.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_appstore.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_category.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_owner.dart';
 import 'package:flutter_ecommerce_app/src/model/app_product_subcategory.dart';
+import 'package:flutter_ecommerce_app/src/model/app_question.dart';
+import 'package:flutter_ecommerce_app/src/model/app_transaction.dart';
 import 'package:flutter_ecommerce_app/src/model/app_user.dart';
+import 'package:flutter_ecommerce_app/src/model/app_wallet.dart';
+import 'package:flutter_ecommerce_app/src/themes/light_color.dart';
 import 'package:flutter_money_formatter/flutter_money_formatter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:rflutter_alert/rflutter_alert.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import './constants.dart';
+import 'package:location/location.dart';
+import 'package:toast/toast.dart';
 
 class App{
   SharedPreferences _preferences;
@@ -141,11 +151,11 @@ class App{
         throw Exception('Failed to load categories');
       }
   }
-  static Future<List<ProductCategory>> getProductCategories() async{
+  static Future<List<ProductCategory>> getProductCategories({int start: 0, int stop: 20}) async{
       List<ProductCategory> catgeories = List<ProductCategory>();
       
       try{
-        final response = await http.get(appDomain + '/api/v1/category/get-categories/0/20');
+        final response = await http.get(appDomain + '/api/v1/category/get-categories/$start/$stop');
         if (response.statusCode == 200) {
           var _res = json.decode(response.body);
           List<dynamic> productCatgories = _res['categories'];
@@ -339,7 +349,7 @@ class App{
   static Future<List<Address>> getUserAddress() async{
     try{
       var user = await App.getCurrentUser();
-      var response = await http.get(appDomain + '/api/v1/user/address/get/0/3', headers: {
+      var response = await http.get(appDomain + '/api/v1/user/address/get/0/20', headers: {
         'x-access-token': user.token
       });
       var address = json.decode(response.body)['address'];
@@ -366,6 +376,489 @@ class App{
         //     throw response;
         // }
         return response;
+    }catch(error){
+      throw error;
+    }
+  }
+
+  static Future<List<Order>> getUserOrders() async{
+    try{
+        var user = await App.getCurrentUser();
+        var response = await http.get(appDomain+'/api/v1/user/order/get-orders/0/20', headers: {
+          'x-access-token': user.token
+        });
+        var orders = json.decode(response.body)['order'];
+        // var products = orders['products'];
+        
+        List<Order> _orders = [];
+        orders.forEach(( order){
+          var products = order['products'];
+          List<AppProduct> _products = [];
+          products.forEach((product) {
+                AppProduct appProduct = AppProduct(createdAt: product['createdAt'],
+                id: product['id'], name: product['name'], model: product['model'], description:
+                  product['description'], year: product['year'], mainImageUrl: product['mainImageUrl'], sellingPrice:
+                  product['sellingPrice'], costPrice: product['costPrice'], discounts: product['discounts'], finalPrice: 
+                  product['finalPrice'], deliveryDays: product['deliveryDays'], deliveryLocation: product['deliveryLocation'],
+                    deliveryType: product['deliveryType'], rating: product['rating'], blockedReason: product['blockedReason'],
+                    isBlocked: product['isBlocked'], homepage: product['homepage'], homePageUntil: product['homePageUntil'], 
+                    featured: product['featured'], featuredUntil: product['featuredUntil'], owner: null, agent: product['agent'],
+                      adCategory: product['adCategory'], category: null, subCategory: null, store: null,
+                      orderId: product['id'] ,orderNumber: order['quantity']["${product['id']}"],
+                       orderStatus: order['productStatus']["${product['id']}"]
+                       
+                  );
+              print('here o');
+              _products.add(appProduct);
+              
+          });
+          Address _address = Address(address1: order['address']['address1'], id: order['address']['id'], 
+                state: order['address']['state'], country: order['address']['country']);
+          _orders.add(
+            Order(products: _products , address: _address , addressString: order['addressString'] , 
+              createdAt: order['createdAt'] , id: order['id'] , owner: order['owner'] ,status: order['status'] , totalAmount: order['totalAmount'] )
+          );
+        });
+        return _orders;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<bool> signOutUser() async{
+     try{
+       SharedPreferences _prefs = await SharedPreferences.getInstance();
+       _prefs.remove('user');
+       return true;
+     }catch(error){
+       return false;
+     }
+  }
+  static bool isEmail(String em) {
+
+    String p = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+
+    RegExp regExp = new RegExp(p);
+
+    return regExp.hasMatch(em);
+  }
+  static Future<http.Response> signUp(String firstName, String lastName, String emailAddress,
+    String password, String phoneNumber, String country, String countryCode, String gender, String referredBy
+      ,String isoCode) async{
+      try{
+        var response = await http.post(appDomain+'/api/v1/registration/signup', body: {
+          'firstName': firstName, 'lastName': lastName, 'emailAddress': emailAddress, 
+          'password': password, 'phoneNumber': phoneNumber, 'country': country, 'countryCode': countryCode,
+          'gender': gender, 'referredBy': referredBy, 'isoCode': isoCode
+        });
+        return response;
+      }catch(error){
+        throw error;
+      }
+  }
+  static Future<http.Response> resendVerificationLink(String email) async{
+    try{
+      var response = await http.post(appDomain+'/api/v1/registration/resend-verification-code', body: {
+        'emailAddress': email
+      });
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> verifyEmail(String email, String password, String emailProofToken ) async{
+    try{
+        var response = await http.post(appDomain+'/api/v1/registration/verify-email', body: {
+          'emailAddress': email, 'password': password, 'emailProofToken': emailProofToken
+        });
+        return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> sendPasswordLink(String email) async{
+    try{
+        var response = await http.post(appDomain+'/api/v1/user/forgot-password', body: {'emailAddress': email});
+        return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<User> getUserWallet() async{
+    try{
+      SharedPreferences _prefs = await SharedPreferences.getInstance();
+      var user = await App.getCurrentUser();
+      var response = await http.get(appDomain+'/api/v1/user/wallet/get', headers: {
+        'x-access-token': user.token
+      });
+      var wallet = json.decode(response.body)['wallet'];
+      var transactions = wallet['transactions'];
+      List<Transaction> _transaction = [];
+
+      transactions.forEach((item) {
+        _transaction.add(Transaction(amount: item['amount'] ,createdAt: item['createdAt'],
+        currency: item['currency'] ,id: item['id'] ,isApproved: item['isApproved'] ,owner: item['owner'],
+        transactionReference: item['transactionReference'] ,type: item['type'] ,wallet: item['wallet'] ));
+      });
+
+      Wallet _wallet = Wallet(currency: wallet['currency'], id: wallet['id'], 
+      createdAt: wallet['createdAt'], balance: wallet['balance'], transactions: _transaction);
+
+      user.wallet = _wallet;
+      _prefs.remove('user');
+      _prefs.setString('user', json.encode(user));
+      return user;
+    }catch(error){
+      throw error;
+    }
+  }
+
+  static Future<List<Question>> getSecurityQuestions() async{
+    try{
+      var response = await http.get(appDomain + "/api/v1/user/get-security-questions");
+      var questions = json.decode(response.body)['questions'];
+      List<Question> _questions= [];
+      questions.keys.forEach((key) {
+        _questions.add(Question(id: key ,question: questions[key]));
+      });
+      return _questions;
+    }catch(error){
+      throw error;
+    }
+  }
+
+  static Future<http.Response> setSecurityQuestion(String pin, String securityQuestion, String securityAnswer) async{
+    try{
+      SharedPreferences _prefs = await SharedPreferences.getInstance();
+      var user = await App.getCurrentUser();
+      var response = await http.post(appDomain+'/api/v1/user/set-account-pin', 
+        body: {'pin': pin, 'securityQuestion': securityQuestion, 'securityAnswer': securityAnswer},
+        headers: {'x-access-token': user.token}  );
+      user.pinSet = true;
+      _prefs.remove('user');
+      _prefs.setString('user', json.encode(user));
+        return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> topUpWallet(String amount, String transactionReference) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = http.post(appDomain+'/api/v1/user/wallet/topup',body: {
+        'amount': amount,
+        'transactionReference': transactionReference
+      },
+        headers: {'x-access-token': user.token});
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<LocationData> getUserLocation() async{
+    Location location = new Location();
+    var _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (!_serviceEnabled) {
+        return null;
+      }
+    }
+
+    var _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+      if (_permissionGranted != PermissionStatus.granted) {
+        return null;
+      }
+    }
+
+    var _locationData = await location.getLocation();
+
+    return _locationData;
+
+  }
+  static Future<http.Response> getAddressFromLocation(LocationData locationData) async{
+    try{
+      var response = await http.get('https://maps.googleapis.com/maps/api/geocode/json?latlng=${locationData.latitude},${locationData.longitude}&sensor=true&key=$apiKey');
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static showToast(BuildContext context, message){
+    Toast.show(message, context, duration: Toast.LENGTH_LONG, gravity:  Toast.BOTTOM);
+  }
+  static Future<User> getUserBanks() async{
+    try{
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      var startRecord = 0;
+      var endRecord = 20;
+      var user = await App.getCurrentUser();
+      var res = await http.get(appDomain+'/api/v1/user/bank-account/get/$startRecord/$endRecord', headers: {'x-access-token': user.token});
+      var response = json.decode(res.body);
+      var banks = response['bankAccounts'];
+      List<Bank> _banks = [];
+
+      banks.forEach((bank){
+        _banks.add(
+          Bank(accountName:bank['accountName'] , accountNumber:bank['accountNumber']  ,active: bank['active']  ,
+          code: bank['code']  ,createdAt: bank['createdAt']  ,
+          gateway: bank['gateway'] ,id: bank['id'] ,longcode:bank['longcode']  ,name: bank['name'] ,
+          owner:bank['owner']  ,slug:bank['slug']  )
+        );
+      });
+      user.banks = _banks;
+      prefs.remove('user');
+      prefs.setString('user', json.encode(user));
+      return user;
+      
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> requestWalletWithdraw(String amount, String pin, String currency) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.post(appDomain+'/api/v1/user/wallet/request-withdrawal', body: {
+        'amount': amount, 'pin': pin, 'currency': currency
+      }, 
+          headers: {'x-access-token': user.token});
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> sendMoney(String amount, String receiver, String pin) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.post(appDomain+'/api/v1/user/wallet/wallet-transfer', body: {
+                'amount': amount, 'receiver': receiver, 'currency': 'NGN', 'pin': pin
+              }, headers: {'x-access-token': user.token});
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> deleteBankAcountById(String id) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.delete(appDomain+'/api/v1/user/bank-account/delete/$id', headers: {
+                      'x-access-token': user.token
+                    });
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> deleteAddressById(String id) async{
+    try{
+      var user = await App.getCurrentUser();
+      var response = await http.delete(appDomain+'/api/v1/user/address/delete/$id', headers: {
+                      'x-access-token': user.token
+                    });
+      return response;
+    }catch(error){
+      throw error;
+    }
+  }
+  static showActionSuccess(BuildContext context, {String message = "Action Performed successfully", Function onConfirm}){
+    return Alert(
+          context: context,
+          type: AlertType.success,
+          title: "Action Successful",
+          desc: message,
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Continue",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+                onConfirm(context);
+              },
+              width: 120,
+            ),
+          ],
+        ).show();
+  }
+  static showActionError(BuildContext context, {String message = "Action could not be performed", Function onConfirm}){
+    return Alert(
+          context: context,
+          type: AlertType.error,
+          title: "Action Error",
+          desc: message,
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Continue",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+                onConfirm(context);
+              },
+              width: 120,
+            ),
+          ],
+        ).show();
+  }
+  static showConfirmDialog(BuildContext context,String title, String message, Function onConfirm, {int parmas}){
+    return Alert(
+          context: context,
+          type: AlertType.info,
+          title: title,
+          desc: message,
+          buttons: [
+            DialogButton(
+              color: LightColor.orange,
+              child: Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+              },
+              width: 120,
+            ),
+            DialogButton(
+              color: LightColor.red,
+              child: Text(
+                "Continue",
+                style: TextStyle(color: Colors.white, fontSize: 20),
+              ),
+              onPressed: (){
+                Navigator.pop(context);
+                onConfirm(parmas);
+              },
+              width: 120,
+            ),
+          ],
+        ).show();
+  }
+  static Future<List<PayStackBank>> getPayStackBanks() async{
+    try{
+      var response = await http.get('https://api.paystack.co/bank');
+      var banks = json.decode(response.body)['data'];
+      List<PayStackBank> pbank = [];
+      print('fetched banks : ${banks.length}');
+      banks.forEach((entry){
+        if((entry['slug'] != null && entry['slug'] != '') && (entry['longcode'] != '' && entry['longcode'] != null) && (entry['code'] != null && entry['code'] != '') && (entry['gateway'] != null && entry['gateway'] != '')){
+          pbank.add(PayStackBank(code: entry['code'] ,country: entry['country'] ,currency: entry['currency'] ,
+          gateway: entry['gateway'] ,id: entry['id'],longcode: entry['longcode'],name: entry['name'],slug:entry['slug'], active: entry['active'] ));
+        }
+      });
+      print(pbank.length);
+      return pbank;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<http.Response> addBank(PayStackBank bank, String accountName, String acountNumber) async{
+    try{
+      var user = await App.getCurrentUser();
+      // print(user.token);
+      print('long code: '+ bank.longcode);
+      print(bank.name +'>' + bank.code +'>'+ bank.longcode + '>' + bank.active.toString() + '>' + bank.slug);
+      var response = await http.post(appDomain+'/api/v1/user/bank-account/create', body: {
+                                      'name': bank.name,
+                                      'code': bank.code,
+                                      'longcode': bank.longcode,
+                                      'gateway': bank.gateway,
+                                      'active': bank.active.toString(),
+                                      'accountName': accountName,
+                                      'accountNumber': acountNumber,
+                                      'slug': bank.slug
+                                    }, headers: {'x-access-token': user.token});
+      print(json.decode(response.body));
+      return response;
+    }catch(error){
+      print(error);
+      throw error;
+    }
+  }
+  static Future<http.Response> addAddress(String country, String state, String city, String address1, {String address2 = ""}) async{
+      try{
+        var user = await App.getCurrentUser();
+        var response = await http.post(appDomain+'/api/v1/user/address/create', body: {
+                            'country': country,
+                            'state': state,
+                            'city': city,
+                            'address1': address1,
+                            'address2': address2
+                          }, headers: {
+                                                    'x-access-token': user.token
+                                                  });
+        return response;
+      }catch(error){
+        throw error;
+      }
+  }
+  static Future<List<AppProduct>> searchProduct(String searchString, {String brandName="", String model="", int year = 0, int category = 0, int store = 0, String sellingPrice =""
+    ,String costPrice="", int subcategory = 0, bool discounts = true, String finalPrice = ""}) async{
+    try{
+      var response = await http.post(appDomain+'/api/v1/user/search-product', body: {
+                        "name": searchString,
+                        "brandName": brandName,
+                        "model": model,
+                        "year": year.toString(),
+                        "category": category.toString(),
+                        "subCategory": subcategory.toString(),
+                        "store": store.toString(),
+                        "sellingPrice": sellingPrice,
+                        "costPrice": costPrice,
+                        "discounts": discounts.toString(),
+                        "finalPrice": finalPrice
+                      });
+      print('we have a search');
+      List<dynamic> products = json.decode(response.body)['products'];
+      print(products.length);
+      List<AppProduct> _products = [];
+      products.forEach((product) {
+        
+        
+
+        AppProduct appProduct = AppProduct(createdAt: product['createdAt'],
+             id: product['id'], name: product['name'], model: product['model'], description:
+              product['description'], year: product['year'], mainImageUrl: product['mainImageUrl'], sellingPrice:
+               product['sellingPrice'], costPrice: product['costPrice'], discounts: product['discounts'], finalPrice: 
+               product['finalPrice'], deliveryDays: product['deliveryDays'], deliveryLocation: product['deliveryLocation'],
+                deliveryType: product['deliveryType'], rating: product['rating'], blockedReason: product['blockedReason'],
+                 isBlocked: product['isBlocked'], homepage: product['homepage'], homePageUntil: product['homePageUntil'], 
+                 featured: product['featured'], featuredUntil: product['featuredUntil'], owner: null, agent: product['agent'],
+                  adCategory: product['adCategory'], category: null, subCategory: null, store: null,
+              );
+        
+        _products.add(appProduct);
+      });
+      return _products;
+    }catch(error){
+      throw error;
+    }
+  }
+  static Future<List<AppProduct>> getSellersProduct({int start = 0, int stop = 100}) async{
+    try{
+        var user = await App.getCurrentUser(); 
+        var response = await http.get(appDomain+'/api/v1/seller/product/get-products/0/100', headers: {'x-access-token': user.token});
+        List<dynamic> products = json.decode(response.body)['products'];
+        List<AppProduct> _products = [];
+        products.forEach((product) {
+        AppProduct appProduct = AppProduct(createdAt: product['createdAt'],
+             id: product['id'], name: product['name'], model: product['model'], description:
+              product['description'], year: product['year'], mainImageUrl: product['mainImageUrl'], sellingPrice:
+               product['sellingPrice'], costPrice: product['costPrice'], discounts: product['discounts'], finalPrice: 
+               product['finalPrice'], deliveryDays: product['deliveryDays'], deliveryLocation: product['deliveryLocation'],
+                deliveryType: product['deliveryType'], rating: product['rating'], blockedReason: product['blockedReason'],
+                 isBlocked: product['isBlocked'], homepage: product['homepage'], homePageUntil: product['homePageUntil'], 
+                 featured: product['featured'], featuredUntil: product['featuredUntil'], owner: null, agent: product['agent'],
+                  adCategory: product['adCategory'], category: null, subCategory: null, store: null,
+              );
+        
+        _products.add(appProduct);
+      });
+      return _products;
     }catch(error){
       throw error;
     }

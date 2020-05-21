@@ -116,14 +116,8 @@ class MyApp extends StatelessWidget {
                       ),
                       debugShowCheckedModeBanner: false ,
                       home: MainPage(),
+                      initialRoute: '/',
                       routes: Routes.getRoute(),
-                      // onGenerateRoute: (RouteSettings settings ){
-                      //         final List<String> pathElements = settings.name.split('/');
-                      //           if(pathElements[1].contains('detail')){
-                      //             return CustomRoute<bool>(builder:(BuildContext context)=> ProductDetailPage(), settings: settings);
-                      //           }
-                      //          return null;
-                      //     },
                     ) ,
                   );
                     }
@@ -162,15 +156,14 @@ class MyApp extends StatelessWidget {
                                 debugShowCheckedModeBanner: false ,
                                 home: Scaffold(
                                   body:  Container(
-                                      color: LightColor.orange,
+                                      color: Colors.white,
                                       child: Center(
-                                        child: TitleText(
-                                          color: Colors.white ,
-                                          text: 'Azonka',
-                                          fontSize: 30,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                    )
+                                        child: Image.asset('assets/logoBlack.png',
+                                                    fit: BoxFit.contain,
+                                                    height: 400.0,
+                                                    width: 400.0,
+                                          ),
+                                        )
                                     ),
                                 ),
                               );
@@ -202,15 +195,14 @@ class MyApp extends StatelessWidget {
                 debugShowCheckedModeBanner: false ,
                 home: Scaffold(
                   body:  Container(
-                      color: LightColor.orange,
+                      color: Colors.white,
                       child: Center(
-                        child: TitleText(
-                          color: Colors.white ,
-                          text: 'Azonka',
-                          fontSize: 30,
-                          fontWeight: FontWeight.w800,
-                        ),
-                    )
+                        child: Image.asset('assets/logoBlack.png',
+                                    fit: BoxFit.contain,
+                                    height: 400.0,
+                                    width: 400.0,
+                          ),
+                        )
                     ),
                 ),
               );

@@ -38,9 +38,20 @@ dependencies:
   flutter_paystack: 1.0.1
   # intl: ^0.16.0
   flutter_money_formatter: 0.8.3
+  flutter_country_picker: ^0.1.6
   # paystack_flutter: ^0.0.2
   # paystack_sdk: ^0.0.1
-
+  keyboard_avoider: ^0.1.2
+  location: ^3.0.2
+  toast: ^0.1.5
+  # flutter_qr_reader: ^1.0.3
+  flutter_rating_bar: ^3.0.1+1
+  flutter_qr_reader: ^1.0.3
+  image_picker: ^0.6.6+1
+  permission_handler: ^5.0.0+hotfix.6
+  # fast_qr_reader_view: ^0.1.5
+  barcode_scan: ^3.0.1
+  file_picker: ^1.9.0+1
 dev_dependencies:
   flutter_test:
     sdk: flutter
